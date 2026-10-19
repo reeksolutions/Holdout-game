@@ -83,7 +83,13 @@ with sync_playwright() as pw:
         dp,dy=best;ok(f'{g} hip-fire aim on crosshair (<5 deg)',dp<5 and dy<5,f'pitch off {dp:.1f}, yaw off {dy:.1f}')
         e("window.__btn(6,1)");time.sleep(1.3);dp,dy=diff(x(M));ok(f'{g} ADS aim on crosshair (<3 deg)',dp<3 and dy<3,f'pitch off {dp:.1f}, yaw off {dy:.1f}')
         pg.screenshot(path=SHOTS+f'/ads_{g}.png');e("window.__btn(6,0)");time.sleep(.4)
+    # head follows the camera (melee): turn the camera, the head (then the body) should end up facing where you look
     x("(equip('axe'),0)");time.sleep(1)
+    HY="(()=>{const yaw=o=>{const v=new THREE.Vector3(0,0,1).applyQuaternion(o.getWorldQuaternion(new THREE.Quaternion()));return Math.atan2(v.x,v.z)*57.3};const d=yaw(SOLD.b.Head)-Math.atan2(AIMCAM.d.x,AIMCAM.d.z)*57.3;return Math.abs((d+540)%360-180)})()"
+    e("window.__ax(2,.6)");time.sleep(.5);e("window.__ax(2,0)");time.sleep(1.2);hy=x(HY)
+    ok('head looks where the camera looks (<25 deg)',hy<25,round(hy,1))
+    e("window.__ax(2,.6)");time.sleep(2);e("window.__ax(2,0)");time.sleep(2);hy=x(HY)
+    ok('body turns to catch up after a big camera spin (<25 deg)',hy<25,round(hy,1))
     ok('no JavaScript errors',len(errs)==0,errs[:5])
     b.close()
 srv.shutdown()

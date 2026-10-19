@@ -1873,6 +1873,7 @@ function mxPistolSetup(m){SOLD.PS=null;if(!MXL.data||SET.mxAnim===false||!MXL.da
     const wy=wd.clone().negate(),wx=new THREE.Vector3().crossVectors(wy,we),q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(wx,wy,we));
     const hq=hb.getWorldQuaternion(new THREE.Quaternion());SOLD.pg={q:hq.clone().invert().multiply(q),p:hb.worldToLocal(P1.clone().lerp(P2,.42))}}
   save.forEach(([a,w])=>a.setEffectiveWeight(w));SOLD.mixer.update(0)}
+const HEADLOOK={yaw:1.2,rate:9,chest:.18,body:5};   /* B138 head follows the camera: max turn (rad, ~70 deg), speed, share given to the chest */
 const CAMGUN={up:.18,level:1.0};   /* B134 hip camera with a gun: raise (m), and lift the look point so neutral aim is level */
 const CLEAR={one:[.09,.07,0,0],two:[.09,.07,.3,.25]};   /* melee clearance per grip: fist out (m), fist forward (m), blade tilt out, blade tilt up */
 const LEDGE={pull:.75,lock:.25};   /* B126 ledge pull-up length divisor (was 1.5, lower = slower/heavier) and the lock after you're up */
@@ -2634,7 +2635,8 @@ function soldierPose(dt,o){
   if(SOLD.adsW>.01)bRot(b.Spine2,1,0,0,-P.aimPitch*.55*SOLD.adsW);
   if(pistolClip()&&W[S.weapon].pist){SOLD.paW=lerp(SOLD.paW||0,(P.ads||P.aimT>0)&&!(SOLD.PS&&SOLD.PS.shoot)?1:0,k(14));const kick=(SOLD.shotT||0)>0?Math.sin(clamp(SOLD.shotT/.3,0,1)*Math.PI)*GUNANIM.kick:0,r=PAIM.up*SOLD.paW-kick;if(SOLD.shotT>0&&!(SOLD.PS&&SOLD.PS.shoot))SOLD.shotT-=dt;if(r>.001||r<-.001){bRot(b.RightArm,1,0,0,r);bRot(b.LeftArm,1,0,0,r);bRot(b.RightHand,1,0,0,-(r+kick)*PAIM.hand-kick*.6);bRot(b.LeftHand,1,0,0,-(r+kick)*PAIM.hand-kick*.6)}}   /* the raise is counter-rotated so the gun stays level; the kick isn't, so the muzzle flips */
   {const wv=S&&W[S.weapon];if(wv&&wv.ranged&&!wv.pist&&(SOLD.rA||0)>.01&&!P.act&&!P.roll){const bl=.5*SOLD.rA;bRot(b.Spine1,0,1,0,-bl*.5);bRot(b.Spine2,0,1,0,-bl*.5);bRot(b.Head,0,1,0,bl*.8)}}
-  if(Math.abs(P.lookTw||0)>.002||Math.abs(P.lookP||0)>.002){const tw=P.lookTw||0,lp=P.lookP||0;bRot(b.Spine,0,1,0,tw*.3);bRot(b.Spine1,0,1,0,tw*.35);bRot(b.Spine2,0,1,0,tw*.25);bRot(b.Spine1,1,0,0,-lp*.3);bRot(b.Spine2,1,0,0,-lp*.45);bRot(b.Head,0,1,0,tw*.1)}
+  if(Math.abs(P.lookTw||0)>.002||Math.abs(P.lookP||0)>.002){const tw=P.lookTw||0,lp=P.lookP||0;bRot(b.Spine,0,1,0,tw*.3);bRot(b.Spine1,0,1,0,tw*.35);bRot(b.Spine2,0,1,0,tw*.25);bRot(b.Spine1,1,0,0,-lp*.3);bRot(b.Spine2,1,0,0,-lp*.45);bRot(b.Neck,0,1,0,tw*.08);bRot(b.Head,0,1,0,tw*.14)}
+  if(Math.abs(P.headTw||0)>.002||Math.abs(P.headP||0)>.002){const tw=P.headTw||0,lp=P.headP||0;bRot(b.Spine2,0,1,0,tw*HEADLOOK.chest);bRot(b.Neck,0,1,0,tw*.4);bRot(b.Head,0,1,0,tw*(.6-HEADLOOK.chest));bRot(b.Neck,1,0,0,-lp*.4);bRot(b.Head,1,0,0,-lp*.6)}
   /* arms from the gesture driver */
   if(g>.01){
     bRot(b.RightArm,1,0,0,R.rotation.x*g);bRot(b.RightArm,0,0,1,-R.rotation.z*g);bRot(b.RightForeArm,1,0,0,R.userData.j.rotation.x*g);
@@ -4650,7 +4652,13 @@ function update(dt){
         if(P.speed<.3&&P.atk<=0){if(Math.abs(df)>.85)P.turnIP=1;if(P.turnIP){P.face=lerpAngle(P.face,lf,1-Math.exp(-7*dt));if(Math.abs(df)<.12)P.turnIP=0}}else P.turnIP=0;
         if(P.atk>0||P.aimT>0){P.face=lerpAngle(P.face,lf,1-Math.exp(-18*dt))}   /* firing from the hip turns you toward the crosshair */
         df=Math.atan2(Math.sin(lf-P.face),Math.cos(lf-P.face))}else P.turnIP=0;
-      P.lookTw=lerp(P.lookTw||0,gun?clamp(df,-1.05,1.05):0,1-Math.exp(-12*dt));P.lookP=lerp(P.lookP||0,gun?clamp((.08-P.pitch)*.8,-.5,.55):0,1-Math.exp(-12*dt))}
+      P.lookTw=lerp(P.lookTw||0,gun?clamp(df,-1.05,1.05):0,1-Math.exp(-12*dt));P.lookP=lerp(P.lookP||0,gun?clamp((.08-P.pitch)*.8,-.5,.55):0,1-Math.exp(-12*dt));
+      /* B138 head look: with melee / no gun the head (and a little chest) turns to where the camera looks, so spinning the camera never leaves a stiff head */
+      {const hk=!gun&&!P.ads&&!bagOpen&&!P.act&&!P.roll&&!P.dead&&!S.grab&&!P.search&&!(P.atk>0)&&!P.block&&!P.charging;let hd=0;
+        if(hk){const lf=P.yaw+Math.PI;hd=Math.atan2(Math.sin(lf-P.face),Math.cos(lf-P.face));
+          if(P.speed<.3){if(Math.abs(hd)>HEADLOOK.yaw+.2)P.turnH=1;if(P.turnH){P.face=lerpAngle(P.face,lf,1-Math.exp(-HEADLOOK.body*dt));hd=Math.atan2(Math.sin(lf-P.face),Math.cos(lf-P.face));if(Math.abs(hd)<.15)P.turnH=0}}else P.turnH=0;   /* past the head's reach the feet step around to catch up */
+          if(Math.abs(hd)>2.3&&Math.abs(P.headTw||0)>.2)hd=Math.sign(P.headTw)*Math.abs(hd)}   /* looking back over a shoulder: keep turning the same way, no snap */
+        P.headTw=lerp(P.headTw||0,hk?clamp(hd,-HEADLOOK.yaw,HEADLOOK.yaw):0,1-Math.exp(-HEADLOOK.rate*dt));P.headP=lerp(P.headP||0,hk?clamp((.08-P.pitch)*.6,-.35,.4):0,1-Math.exp(-HEADLOOK.rate*dt))}}
     P.x+=P.kx*dt;P.z+=P.kz*dt;P.kx*=Math.pow(.02,dt);P.kz*=Math.pow(.02,dt);
     collide(P,.32);
     const g=groundAt(P.x,P.z,P.y);
