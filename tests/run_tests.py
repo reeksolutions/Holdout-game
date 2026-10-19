@@ -109,7 +109,7 @@ with sync_playwright() as pw:
     e("window.__ax(2,.6)");time.sleep(2);e("window.__ax(2,0)");time.sleep(2);hy=x(HY)
     ok('body turns to catch up after a big camera spin (<25 deg)',hy<25,round(hy,1))
     ok('no JavaScript errors',len(errs)==0,errs[:5])
-    # ---- town map (Ashford): loads, spawn on the highway, every building door reachable, buildings enterable ----
+    # ---- town map (Riverdale): loads, spawn on the highway, every building door reachable, buildings enterable ----
     pg2=b.new_page(viewport={'width':480,'height':320});errs2=[];pg2.on('pageerror',lambda e:errs2.append(str(e)))
     if os.path.exists(NM):
         pg2.route('**/three.min.js',lambda r:r.fulfill(path=NM+'/build/three.min.js'));pg2.route('**/GLTFLoader.js',lambda r:r.fulfill(path=NM+'/examples/js/loaders/GLTFLoader.js'))
@@ -124,7 +124,7 @@ with sync_playwright() as pw:
     ok('every town building door is reachable',not info['blockedDoors'],info['blockedDoors'])
     x2("(SET.testRun=false,P.x=-95,P.z=140,P.y=0,P.face=Math.PI/2,P.yaw=Math.PI/2+Math.PI,0)");pg2.evaluate("window.__FIX=1/30;window.__padOn()");pg2.evaluate("window.__ax(1,-.6)")
     pg2.evaluate('n=>new Promise(r=>{let i=0;const f=()=>{if(++i<n)requestAnimationFrame(f);else r()};requestAnimationFrame(f)})',90);pg2.evaluate("window.__ax(1,0)")
-    ok('can walk into the gas station',x2("(bldAt(P.x,P.z)||{}).name")=='GAS & GO',x2("[P.x,P.z]"))
+    ok('can walk into the gas station',x2("(bldAt(P.x,P.z)||{}).name")=="BRADLEY'S",x2("[P.x,P.z]"))
     ok('town: no JavaScript errors',len(errs2)==0,errs2[:5])
     b.close()
 srv.shutdown()

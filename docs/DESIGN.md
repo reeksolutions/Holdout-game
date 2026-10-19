@@ -51,11 +51,13 @@ One big open map, no loading between zones. Persistent survival (not extraction 
 
 **Safe zone:** guarded zone inside the main city, military enforcement, NPC traders (buy/sell/trade), curfew at night, no PvP inside. You can build your base anywhere.
 
-### 5.4 Ashford (current playable map, B141)
-A ~500 m abandoned American town being swallowed by the woods: highway entrance with a quarantine checkpoint (spawn), gas station + garage, Pine Rest motel,
-Main Street (grocery, pharmacy, hardware, tavern, diner, laundromat, sheriff), water tower landmark, Maple/Pine/Birch residential streets + church,
-Ashford Clinic, industrial yard (warehouse, depot, substation, junkyard, containers, radio tower), drainage channel. Boundaries: collapsed bridge (S),
-rockslide (N), closed bridge (E), deep woods (W) — future expansion routes. Built in stages: blockout first, art from reference images next.
+### 5.4 Riverdale (current playable map, B141 blockout, B142 art pass)
+A ~500 m abandoned American town being swallowed by the woods, dusk-blue and wet: highway entrance with a "RIVERDALE NEXT RIGHT" sign and a quarantine checkpoint (spawn),
+BRADLEY'S gas station (red-stripe canopy, pumps, GAS/FOOD/COLD BEER/LOTTO pole sign, AUTO SERVICE garage, ICE box), PINE VIEW two-storey motel (upstairs walkway + stairs, neon sign, drained pool),
+brick Main Street with upper floors, blade signs, painted HARDWARE wall sign and the "OUR TOWN · OUR HOME · STILL HERE" banner, water tower, craftsman porch houses (siding, mailboxes, bins, chimneys, ivy) + church,
+RIVERDALE MEDICAL CENTER (portico, red-cross sign, EMERGENCY neon, ambulance, stretcher, wheelchair, cones), industrial yard (metal warehouse, smokestack, depot, substation, junkyard, containers, radio tower),
+river + rusted truss bridge to the east. Wet asphalt with puddles. Boundaries: collapsed bridge (S), rockslide (N), closed bridge (E), deep woods (W) — future expansion routes.
+Art kit (`dressB`, `dressBox`, `upper`, `blade`, `neonSign`, `ivyOn`, `lampSpot` light pool of 6 real lights) lives just above `buildForest()`.
 
 ## 6. Core loop
 Gear up → head out → fight or avoid → get back alive → upgrade gear and base → push into harder zones, raid or defend.

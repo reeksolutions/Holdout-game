@@ -44,7 +44,7 @@ Quick syntax-only check: extract the biggest `<script>` and run `node --check` o
 ## Playing it
 Must be served over http (opening the file directly blocks the model loads):
 `python3 -m http.server 8000` then open `http://localhost:8000/`. Or use the GitHub Pages link in README.md.
-The menu has a **MAP** switch: Test Area (movement/combat lab) or Town (Ashford).
+The menu has a **MAP** switch: Test Area (movement/combat lab) or Town (Riverdale).
 
 ## Map of the code (line numbers drift — search the name)
 **Switches & tuning tables (change numbers here first):**
@@ -68,7 +68,7 @@ The menu has a **MAP** switch: Test Area (movement/combat lab) or Town (Ashford)
 
 **State objects:** `P` (player physics/actions), `S` (saved state: hp, inventory, weapon, crouch), `SOLD` (rig, mixer, layers, bones `SOLD.b`), `SET` (settings).
 
-## The town map: Ashford (B141)
+## The town map: Riverdale (B141, art pass B142)
 Replaced the forest. Internally it's still `FOREST_MAP` / `FOREST` / `forest*()` (so saves, fog, spawns and the map screen keep working); the save key is `holdout-save-town`.
 `WORLD=250` (500 x 500 m). Layout data is the `FOREST` object: `roads` (polylines + widths), `trails` (alleys/footpaths), `clear` (open areas for fog), `dark` (wooded pockets), `lots`.
 `buildForest()` builds it in sections: highway/checkpoint (spawn), gas station, motel, Main Street, water tower, residential + church, clinic, industrial, boundaries, trees, clutter.
