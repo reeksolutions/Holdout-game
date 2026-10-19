@@ -51,6 +51,12 @@ One big open map, no loading between zones. Persistent survival (not extraction 
 
 **Safe zone:** guarded zone inside the main city, military enforcement, NPC traders (buy/sell/trade), curfew at night, no PvP inside. You can build your base anywhere.
 
+### 5.4 Ashford (current playable map, B141)
+A ~500 m abandoned American town being swallowed by the woods: highway entrance with a quarantine checkpoint (spawn), gas station + garage, Pine Rest motel,
+Main Street (grocery, pharmacy, hardware, tavern, diner, laundromat, sheriff), water tower landmark, Maple/Pine/Birch residential streets + church,
+Ashford Clinic, industrial yard (warehouse, depot, substation, junkyard, containers, radio tower), drainage channel. Boundaries: collapsed bridge (S),
+rockslide (N), closed bridge (E), deep woods (W) — future expansion routes. Built in stages: blockout first, art from reference images next.
+
 ## 6. Core loop
 Gear up → head out → fight or avoid → get back alive → upgrade gear and base → push into harder zones, raid or defend.
 

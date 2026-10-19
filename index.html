@@ -522,7 +522,7 @@ const pick=a=>a[Math.floor(Math.random()*a.length)];
 
 /* ---------- storage + settings ---------- */
 let store=null;try{store=window.localStorage}catch(e){}
-const SAVE=TEST_MAP?'holdout-save-test':FOREST_MAP?'holdout-save-forest':'holdout-save-v2',OLDSAVE=TEST_MAP?'holdout-save-test':FOREST_MAP?'holdout-save-forest':'holdout-save-v1',BEST='holdout-best-v1',SETK='holdout-settings-v1';
+const SAVE=TEST_MAP?'holdout-save-test':FOREST_MAP?'holdout-save-town':'holdout-save-v2',OLDSAVE=TEST_MAP?'holdout-save-test':FOREST_MAP?'holdout-save-town':'holdout-save-v1',BEST='holdout-best-v1',SETK='holdout-settings-v1';
 const sGet=k=>{try{const s=store&&store.getItem(k);return s?JSON.parse(s):null}catch(e){return null}};
 const sSet=(k,o)=>{try{store&&store.setItem(k,JSON.stringify(o))}catch(e){}};
 const sDel=k=>{try{store&&store.removeItem(k)}catch(e){}};
@@ -578,7 +578,7 @@ function ambUpdate(dt,night,e){if(!SB.ready)return;const day=clamp((e+.12)/.25,0
     if(night&&pick2<.3)play('m_whisper',{x,z,y:1.5,range:60,vol:.35,rate:.9,bus:SB.amb});
     else if(pick2<.55)play('st_wood',{x,z,y:0,range:60,vol:1.4,rate:.55,bus:SB.amb});
     else if(night&&pick2<.75)play('m_scream',{x,z,y:1.5,range:120,vol:.35,rate:.85,bus:SB.amb});
-    else if(FOREST_MAP&&pick2>.93)play('amb_bells',{x:-58,z:63,y:6,range:400,vol:.5,bus:SB.amb});
+    else if(FOREST_MAP&&pick2>.93)play('amb_bells',{x:-94,z:-209,y:6,range:400,vol:.5,bus:SB.amb});
     else play('m_groan',{x,z,y:1.2,range:50,vol:.6,rate:.8,bus:SB.amb})}}
 /* tension score: low detuned drone fades in while something is hunting you, heartbeat speeds up the closer it gets */
 const TEN={on:false,lvl:0,beat:0};
@@ -686,7 +686,7 @@ class Batch{
 }
 
 /* ---------- physics world: solid boxes with height, ramps ---------- */
-const WORLD=TEST_MAP?30:FOREST_MAP?110:80,STEP=.45,GRID=8,solids=[],ramps=[],cells=new Map();
+const WORLD=TEST_MAP?30:FOREST_MAP?250:80,STEP=.45,GRID=8,solids=[],ramps=[],cells=new Map();
 const ck=(ix,iz)=>ix*1000+iz;
 function cellsFor(s,fn){const a=Math.floor((s.x1-1)/GRID),b=Math.floor((s.x2+1)/GRID),c=Math.floor((s.z1-1)/GRID),d=Math.floor((s.z2+1)/GRID);for(let i=a;i<=b;i++)for(let j=c;j<=d;j++)fn(ck(i,j))}
 function addSolid(x1,z1,x2,z2,y1,y2,o){const s={x1:Math.min(x1,x2),x2:Math.max(x1,x2),z1:Math.min(z1,z2),z2:Math.max(z1,z2),y1,y2,on:true,climb:!(o&&o.noClimb)};solids.push(s);cellsFor(s,k=>{let a=cells.get(k);if(!a){a=[];cells.set(k,a)}a.push(s)});return s}
@@ -1299,25 +1299,39 @@ function testLootables(){
   groundItem('medkit',20.8,3.1,-8.5,.5);
 }
 if(TEST_MAP)testLootables();
-/* ---------- FOREST DISTRICT (replaces the desert city) · 150 x 150 m ----------
-   campground (spawn, south) · creek + footbridge · cabin cluster (north-west) · ranger station + lookout (north-east) */
-const FOREST={creek:x=>8+Math.sin(x*.055)*3.2+Math.sin(x*.13)*.8,creekW:3.6,
-  trails:[[0,40,0,11],[0,5,0,-6],[0,-6,-22,-12],[0,-6,26,-24],[-30,-14,-30,-28],[26,-24,32,-26],[0,40,16,54],[-30,-14,-46,-2],
-    [0,42,-22,54],[-22,54,-44,58],[-44,58,-58,56],[-46,-2,-56,-24],[44,-23,46,-46],[46,-46,40,-72]],
-  road:[[14,124],[14,96],[16,74],[17,52],[17,30],[17,12],[17,-6],[18,-26],[22,-44],[32,-60],[44,-72],[49,-90],[54,-124]],
-  spurs:[[[17,-14],[26,-16.5],[32,-17.5],[32,-21]],[[19,-36],[4,-45],[-18,-50],[-40,-52],[-56,-48]]],
-  clear:[[-30,-15,17],[32,-28,15],[0,34,13],[44,-18,6],[-70,-44,24],[40,-86,15],[-55,63,10]],
-  dark:[[-62,66,26],[66,48,30],[-86,18,22],[70,-30,20],[-20,90,24]],
-  meadow:[-70,-44,24],lights:[],df:null,dr:null,tSeg:[],rSeg:[],ok:0,mist:[]};
+/* ---------- ASHFORD (B141): an abandoned small town being swallowed by the woods, ~500 x 500 m. Replaces the forest map
+   (the internal names FOREST_MAP / FOREST / forest*() are kept so every system that hooked the forest keeps working).
+   South-west: highway in (spawn), checkpoint, welcome sign · gas station · motel   Centre: Main Street downtown + water tower
+   North-west: residential streets + church   East: clinic on Elm St   South-east: industrial yard, junkyard, radio tower
+   A concrete drainage channel crosses the town east-west. Boundaries: collapsed bridge (S), landslide (N), blocked bridge (E), deep woods (W). */
+const FOREST={creek:x=>60+Math.sin(x*.024)*6+Math.sin(x*.07)*1.5,creekW:3.2,
+  roads:[
+    {n:'hwy',w:8,pts:[[-138,262],[-138,215],[-134,170],[-122,130],[-104,95],[-86,62],[-74,30],[-68,8],[-60,0]]},
+    {n:'main',w:7.5,pts:[[-60,0],[0,0],[60,0],[118,0],[170,4],[214,9],[262,12]]},
+    {n:'oak',w:6.5,pts:[[-60,0],[-62,-50],[-66,-100],[-70,-160],[-74,-262]]},
+    {n:'elm',w:6.5,pts:[[90,-150],[92,-90],[92,-40],[94,0],[100,50],[112,95]]},
+    {n:'maple',w:6,pts:[[-205,-80],[-140,-84],[-66,-88],[0,-86],[60,-82],[92,-80]]},
+    {n:'pine',w:6,pts:[[-200,-148],[-130,-152],[-70,-150],[-20,-146]]},
+    {n:'birch',w:6,pts:[[-130,-152],[-128,-118],[-126,-86]]},
+    {n:'ind',w:7,pts:[[112,95],[150,110],[200,120],[236,128]]},
+    {n:'yard',w:6,pts:[[150,110],[160,165],[172,214]]},
+    {n:'motel',w:6,pts:[[-90,66],[-118,64]]}],
+  trails:[[-40,-26,70,-26],[-40,26,70,26],[-160,-118,-80,-118],[-120,40,-92,30],[-92,30,-66,20],[70,36,108,62],[96,-40,132,-62],
+    [-20,-30,0,-60],[0,-60,10,-82],[30,60,62,40],[-30,40,-10,70],[-10,70,20,96],[120,-20,150,-30],[-200,-30,-150,-20],[-150,-20,-120,10]],
+  clear:[[-100,125,16],[-125,42,15],[5,0,34],[125,-40,12],[180,125,26],[-138,200,14],[20,-58,13]],
+  dark:[[-185,15,32],[40,-125,24],[175,-85,30],[-25,118,26],[60,185,24],[-215,-205,30],[205,-190,32]],
+  lots:[],lights:[],blink:[],df:null,dr:[],tSeg:[],rSeg:[],ok:0,mist:[],trees:[]};
 function forestDF(segs,rad){const W2=WORLD+20,N=W2*2+1,a=new Float32Array(N*N).fill(rad);
   for(const [x1,z1,x2,z2] of segs){const i0=Math.max(0,Math.floor(Math.min(x1,x2)-rad+W2)),i1=Math.min(N-1,Math.ceil(Math.max(x1,x2)+rad+W2)),j0=Math.max(0,Math.floor(Math.min(z1,z2)-rad+W2)),j1=Math.min(N-1,Math.ceil(Math.max(z1,z2)+rad+W2)),dx=x2-x1,dz=z2-z1,L=dx*dx+dz*dz||1;
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x=i-W2,z=j-W2,t=clamp(((x-x1)*dx+(z-z1)*dz)/L,0,1),d=Math.hypot(x-x1-dx*t,z-z1-dz*t),k=j*N+i;if(d<a[k])a[k]=d}}return{a,N,W2,rad}}
 function dfAt(f,x,z){if(!f)return 99;const fx=x+f.W2,fz=z+f.W2,i=Math.floor(fx),j=Math.floor(fz);if(i<0||j<0||i>=f.N-1||j>=f.N-1)return f.rad;const u=fx-i,v=fz-j,A=f.a,N=f.N,k=j*N+i;return(A[k]*(1-u)+A[k+1]*u)*(1-v)+(A[k+N]*(1-u)+A[k+N+1]*u)*v}
 function inCreek(x,z){return FOREST_MAP&&Math.abs(z-FOREST.creek(x))<FOREST.creekW/2&&!(Math.abs(x)<1.3)&&!(forestRoadD(x,z)<2.4)}
 function forestTrailD(x,z){return dfAt(FOREST.df,x,z)}
-function forestRoadD(x,z){return dfAt(FOREST.dr,x,z)}
+/* distance to the nearest road EDGE + 2.2 (so old "roadD < 3" checks still mean "on or right next to the road", whatever the road's width) */
+function forestRoadD(x,z){let d=99;for(const r of FOREST.dr){const v=dfAt(r.f,x,z)-r.off;if(v<d)d=v}return d}
 function forestDark(x,z){let k=0;for(const [a,b,r] of FOREST.dark)k=Math.max(k,clamp((r-Math.hypot(x-a,z-b))/10,0,1));return k}
-function forestOpen(x,z,pad){if(forestTrailD(x,z)<2.2+pad)return true;if(forestRoadD(x,z)<3.6+pad)return true;if(Math.abs(z-FOREST.creek(x))<FOREST.creekW/2+.8+pad)return true;for(const [cx,cz,r] of FOREST.clear)if(Math.hypot(x-cx,z-cz)<r+pad)return true;return false}
+function onLot(x,z,pad){pad=pad||0;for(const L of FOREST.lots)if(x>L[0]-pad&&x<L[2]+pad&&z>L[1]-pad&&z<L[3]+pad)return true;return false}
+function forestOpen(x,z,pad){if(forestTrailD(x,z)<2.2+pad)return true;if(forestRoadD(x,z)<3.6+pad)return true;if(Math.abs(z-FOREST.creek(x))<FOREST.creekW/2+.8+pad)return true;if(onLot(x,z,pad))return true;for(const [cx,cz,r] of FOREST.clear)if(Math.hypot(x-cx,z-cz)<r+pad)return true;return false}
 /* how open the sky is around you: meadows and clearings let you see further */
 function forestOpenK(x,z){let t=0;for(const [a,b,r] of FOREST.clear)if(r>=13)t=Math.max(t,clamp((r-Math.hypot(x-a,z-b))/9+.15,0,1));if(forestRoadD(x,z)<3)t=Math.max(t,.3);FOREST.ok+=(t-FOREST.ok)*.02;return FOREST.ok}
 /* PSX-ish canvas textures: small, nearest-filtered, tinted by vertex / instance colour */
@@ -1341,7 +1355,7 @@ FTX.needle.repeat.set(3,2);FTX.pine.wrapS=FTX.pine.wrapT=THREE.ClampToEdgeWrappi
 /* instanced meshes split into 40 m chunks with real bounding spheres, so the GPU skips what's behind you / past the fog */
 function chunked(geo,mtl,cast,recv){const ch=new Map();return{add(m,c){const e=m.elements,k=Math.floor((e[12]+320)/64)*100+Math.floor((e[14]+320)/64);let a=ch.get(k);if(!a)ch.set(k,a=[]);a.push([m.clone(),c?c.clone():null])},
   build(){for(const a of ch.values()){const im=new THREE.InstancedMesh(geo.clone(),mtl,a.length),bb=new THREE.Box3(),v=new THREE.Vector3();a.forEach(([m,c],i)=>{im.setMatrixAt(i,m);if(c)im.setColorAt(i,c);v.setFromMatrixPosition(m);bb.expandByPoint(v)});
-    const sp=new THREE.Sphere();bb.getBoundingSphere(sp);sp.radius+=12;im.geometry.boundingSphere=sp;im.castShadow=!!cast;im.receiveShadow=!!recv;scene.add(im)}}}}
+    const sp=new THREE.Sphere();bb.getBoundingSphere(sp);sp.radius+=12;im.geometry.boundingSphere=sp;im.frustumCulled=true;im.castShadow=!!cast;im.receiveShadow=!!recv;scene.add(im)}}}}
 /* a whole pine (trunk + cone tiers) baked into one geometry, height 1; vertex colours + atlas UVs, so each variant is one draw call per chunk */
 function pineGeo(tiers){const parts=[],c=new THREE.Color();const add=(g,col,v0,v1)=>{g=g.index?g.toNonIndexed():g;const uv=g.attributes.uv,n=g.attributes.position.count,C=[];for(let i=0;i<n;i++){uv.setY(i,v0+(v1-v0)*clamp(uv.getY(i),0,1));C.push(col.r,col.g,col.b)}g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));parts.push(g)};
   add(new THREE.CylinderGeometry(.12,.22,1,6).translate(0,.5,0).scale(1,.45,1),c.setRGB(.62,.52,.44).clone(),.02,.48);
@@ -1353,14 +1367,109 @@ function ribbon(pts,w,y,mtl,vLen,jit,po){const cur=new THREE.CatmullRomCurve3(pt
     P.push(p.x+nx*(w/2+j1),y,p.z+nz*(w/2+j1),p.x-nx*(w/2+j2),y,p.z-nz*(w/2+j2));N.push(0,1,0,0,1,0);const v=t*L/vLen;U.push(0,v,1,v);if(i){const a=(i-1)*2;I.push(a,a+2,a+1,a+1,a+2,a+3)}if(pv)seg.push([pv.x,pv.z,p.x,p.z]);pv=p}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));g.setIndex(I);g.computeBoundingSphere();
   if(mtl){const m=mk(g,mtl);m.receiveShadow=true;m.renderOrder=po||0}return{seg,cur,L}}
+/* PSX-grit textures for the town: cracked asphalt with a faded centre line, concrete slabs, a striped lot */
+const TTX=(()=>{const T=(w,h,fn)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');fn(g,w,h);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.NearestFilter;return t},
+  R=Math.random,sp=(g,n,w,h,cols,s0,s1)=>{for(let i=0;i<n;i++){g.fillStyle=cols[i%cols.length];const s=s0+R()*(s1-s0)|0;g.fillRect(R()*w|0,R()*h|0,s,s)}},
+  crack=(g,n,w,h,col)=>{g.strokeStyle=col;for(let i=0;i<n;i++){let x=R()*w,y=R()*h;g.lineWidth=1;g.beginPath();g.moveTo(x,y);for(let k=0;k<6;k++){x+=(R()-.5)*10;y+=(R()-.5)*10;g.lineTo(x,y)}g.stroke()}};
+  return{
+    asphalt:T(64,64,(g,w,h)=>{g.fillStyle='#4a4a48';g.fillRect(0,0,w,h);sp(g,700,w,h,['#3e3e3c','#565652','#444442','#5c5a54'],1,2);crack(g,9,w,h,'#262624');
+      g.fillStyle='rgba(150,130,70,.55)';for(let y=0;y<h;y+=16)g.fillRect(w/2-1,y,2,9);g.fillStyle='rgba(70,80,50,.5)';for(let i=0;i<14;i++)g.fillRect(R()*w|0,R()*h|0,2,1)}),
+    walk:T(32,32,(g,w,h)=>{g.fillStyle='#8a8880';g.fillRect(0,0,w,h);sp(g,260,w,h,['#7a7870','#9a978c','#6e6c64'],1,2);g.fillStyle='#55534c';g.fillRect(0,0,w,1);g.fillRect(0,0,1,h);crack(g,3,w,h,'#4e4c46');
+      g.fillStyle='rgba(70,86,48,.7)';for(let i=0;i<10;i++)g.fillRect(R()*w|0,0,1,1+R()*2|0)}),
+    lot:T(64,64,(g,w,h)=>{g.fillStyle='#4c4c4a';g.fillRect(0,0,w,h);sp(g,700,w,h,['#40403e','#585854','#464644'],1,2);crack(g,10,w,h,'#2a2a28');g.fillStyle='rgba(200,196,180,.45)';g.fillRect(0,0,2,h*.55);g.fillRect(w/2,0,2,h*.55)}),
+    rust:T(64,32,(g,w,h)=>{g.fillStyle='#9aa0a0';g.fillRect(0,0,w,h);for(let i=0;i<40;i++){g.fillStyle=R()<.5?'rgba(110,60,30,.45)':'rgba(70,40,24,.35)';const x=R()*w;g.fillRect(x,R()*8,1+R()*2,6+R()*20)}g.fillStyle='#2a2826';g.font='bold 15px monospace';g.textAlign='center';g.fillText('ASHFORD',w/2,h*.62)})}})();
+TTX.lot.repeat.set(1,1);
+const SIDING=[0x7a766a,0x6e6c62,0x5e666a,0x7a6c5a,0x6a5646,0x707a6e,0x8a8070,0x6a6a72],ROOFS=[0x2e2a26,0x3a3430,0x34302c,0x2a2c2e,0x40342a];
+/* roads: asphalt over a sidewalk (town streets) or a gravel shoulder (highway, industrial); one distance field per road width */
 function forestPaths(){
-  const rm=new THREE.MeshLambertMaterial({map:FTX.road,color:0xb8aa94,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}),
-    sh=new THREE.MeshLambertMaterial({color:0x2e2a1e,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2}),
-    tm=new THREE.MeshLambertMaterial({map:FTX.trail,color:0xa89a80,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-6});
-  const roads=[FOREST.road,...FOREST.spurs];FOREST.roadCur=null;
-  roads.forEach((r,i)=>{ribbon(r,i===1?5:6.2,.02,sh,4,.8);const o=ribbon(r,i===1?3.6:4.4,.03,rm,4,0);FOREST.rSeg.push(...o.seg);if(!i)FOREST.roadCur=o.cur});
-  FOREST.trails.forEach(([a,b,c,d])=>{const L=Math.hypot(c-a,d-b),nx=-(d-b)/L,nz=(c-a)/L,j=(rng()-.5)*Math.min(4,L*.18);const o=ribbon([[a,b],[(a+c)/2+nx*j,(b+d)/2+nz*j],[c,d]],1.6,.04,tm,2.5,.5);FOREST.tSeg.push(...o.seg)});
-  FOREST.df=forestDF(FOREST.tSeg,12);FOREST.dr=forestDF(FOREST.rSeg,14)}
+  const off=(f,u)=>({side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:f,polygonOffsetUnits:u}),
+    am=new THREE.MeshLambertMaterial(Object.assign({map:TTX.asphalt,color:0xa4a29c},off(-3,-6))),sw=new THREE.MeshLambertMaterial(Object.assign({map:TTX.walk,color:0xb0ada4},off(-2,-4))),
+    sh=new THREE.MeshLambertMaterial(Object.assign({color:0x2e2c24},off(-1,-2))),tm=new THREE.MeshLambertMaterial(Object.assign({map:FTX.trail,color:0x8a8070},off(-4,-8)));
+  const byW=new Map();
+  for(const r of FOREST.roads){const walk=!['hwy','ind','yard','motel'].includes(r.n);ribbon(r.pts,r.w+(walk?5:2.4),.02,walk?sw:sh,walk?2.5:4,walk?0:.9);
+    const o=ribbon(r.pts,r.w,.03,am,7,0);r.cur=o.cur;o.seg.forEach(q=>FOREST.rSeg.push([...q,r.w]));let a=byW.get(r.w);if(!a)byW.set(r.w,a=[]);a.push(...o.seg)}
+  for(const [w,segs] of byW)FOREST.dr.push({f:forestDF(segs,18),off:w/2-2.2});
+  FOREST.roadCur=FOREST.roads[0].cur;
+  FOREST.trails.forEach(([a,b,c,d])=>{const L=Math.hypot(c-a,d-b),nx=-(d-b)/L,nz=(c-a)/L,j=(rng()-.5)*Math.min(3,L*.12);const o=ribbon([[a,b],[(a+c)/2+nx*j,(b+d)/2+nz*j],[c,d]],2.6,.04,tm,2.5,.5);FOREST.tSeg.push(...o.seg)});
+  FOREST.df=forestDF(FOREST.tSeg,12)}
+function lot(x1,z1,x2,z2){const g=new THREE.PlaneGeometry(x2-x1,z2-z1);g.rotateX(-Math.PI/2);const uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*(x2-x1)/5,uv.getY(i)*(z2-z1)/5);
+  const m=mk(g,new THREE.MeshLambertMaterial({map:TTX.lot,color:0xa4a29c,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-5}),(x1+x2)/2,.025,(z1+z2)/2);m.receiveShadow=true;FOREST.lots.push([x1,z1,x2,z2])}
+/* a painted board sign (shop fronts, street names); faces +z before ry */
+function boardSign(x,y,z,ry,w,h,text,bg,fg,sub){const c=document.createElement('canvas');c.width=256;c.height=Math.max(32,Math.round(256*h/w));const g=c.getContext('2d');g.fillStyle=bg;g.fillRect(0,0,c.width,c.height);
+  g.fillStyle='rgba(20,16,12,.35)';for(let i=0;i<16;i++)g.fillRect(Math.random()*256,Math.random()*c.height,2+Math.random()*30,1+Math.random()*3);g.fillStyle=fg;g.font='bold '+Math.round(c.height*(sub?.4:.55))+'px monospace';g.textAlign='center';g.textBaseline='middle';
+  g.fillText(text,128,c.height*(sub?.38:.52));if(sub){g.font='bold '+Math.round(c.height*.22)+'px monospace';g.fillText(sub,128,c.height*.78)}
+  const m=mk(new THREE.PlaneGeometry(w,h),new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(c)}),x,y,z);m.rotation.y=ry;return m}
+function streetSign(x,z,a,b2){const B=new Batch();B.box(.08,2.8,.08,x,1.4,z,0x5a5c58);B.build();boardSign(x,2.7,z+.05,0,1.1,.24,a,'#2c5a3a','#e8e8dc');const s=boardSign(x+.05,2.45,z,Math.PI/2,1.1,.24,b2,'#2c5a3a','#e8e8dc');addSolid(x-.06,z-.06,x+.06,z+.06,0,2.8,{noClimb:1})}
+function porch(x,z,w,d,door,col){const o=door==='s'?[0,1]:door==='n'?[0,-1]:door==='e'?[1,0]:[-1,0],px=x+o[0]*(w/2+1),pz=z+o[1]*(d/2+1),pw=o[0]?2:3.2,pd=o[0]?3.2:2;
+  const B=new Batch();B.box(pw,.25,pd,px,.125,pz,col||0x4e463e);B.build();addSolid(px-pw/2,pz-pd/2,px+pw/2,pz+pd/2,0,.25)}
+function stairsFor(x,z,w,d,door){const sx=door==='w'?x+w/2-2.1:x-w/2+.4;return {x1:sx,x2:sx+1.5,z1:z-2.3,z2:z+2.3}}
+/* house interiors: kitchen + living downstairs, bedroom upstairs; furniture kept off the stair side */
+function houseIn(door,floors){return (B,b,f,y)=>{const left=door==='w',fx=left?b.x1+1:b.x2-1,sg=left?1:-1,cx=(b.x1+b.x2)/2,cz=(b.z1+b.z2)/2,dz=door==='n'?1:door==='s'?-1:0;
+  if(f===0){lootSpot('fridge',fx,y,dz>0?b.z2-1:b.z1+1);furniture(fx+sg*1.6,y,cz,'table',Math.PI/2);lootSpot('cabinet',fx,y,dz>0?b.z1+1.3:b.z2-1.3);if(floors===1){furniture(cx-sg*.6,y,dz>0?b.z2-1.4:b.z1+1.4,'bed',0);lootSpot('crate',cx+sg*.4,y,cz+(dz||1)*.4)}else furniture(cx,y,cz+(dz?-dz:1)*1.6,'couch',dz>0?0:Math.PI)}
+  else{furniture(fx-sg*.4,y,cz,'bed',Math.PI/2);lootSpot('desk',cx,y,b.z1+.9);lootSpot('crate',cx+sg*1.2,y,b.z2-.9)}}}
+function townHouse(x,z,w,d,door,floors,o){o=o||{};const col=o.col||SIDING[Math.floor(rng()*SIDING.length)],rc=o.roof||ROOFS[Math.floor(rng()*ROOFS.length)];
+  const b=makeBuilding({x,z,w,d,floors,fh:3,door,col,trim:0x46423a,floorC:0x4a4038,roofC:rc,name:o.name||'HOUSE',type:'house',stairs:floors>1?stairsFor(x,z,w,d,door):null,interior:o.inside||houseIn(door,floors),over:o.over});
+  gableRoof(x,z,w,d,floors*3+1,w>=d?'x':'z',rc);porch(x,z,w,d,door);return b}
+/* solid, closed buildings (background): boarded or black windows, roof, collision, on the map */
+function bgBox(x,z,w,d,h,col,o){o=o||{};const B=new Batch();B.box(w,h,d,x,h/2,z,col,0,.05);if(!o.gable){B.box(w+.25,.5,d+.25,x,h+.25,z,0x2c2a28)}
+  const fl=Math.max(1,Math.round(h/3.2));for(let f=0;f<fl;f++){const y=f*3.2+1.7;
+    for(const [ax,c,a,bb,nx] of [['x',z-d/2-.03,x-w/2,x+w/2,-1],['x',z+d/2+.03,x-w/2,x+w/2,1],['z',x-w/2-.03,z-d/2,z+d/2,-1],['z',x+w/2+.03,z-d/2,z+d/2,1]]){const L=bb-a,n=Math.max(1,Math.floor(L/2.6));
+      for(let i=0;i<n;i++){if(rng()<.18)continue;const t=a+(i+.5)*L/n,bd=rng()<.45;if(ax==='x'){B.box(1.1,1.2,.05,t,y,c,bd?0x5a4632:0x0e1012);if(bd)B.box(1.3,.14,.06,t,y+(rng()-.5)*.6,c+nx*.03,0x6a5440,0,.1)}else{B.box(.05,1.2,1.1,c,y,t,bd?0x5a4632:0x0e1012);if(bd)B.box(.06,.14,1.3,c+nx*.03,y+(rng()-.5)*.6,t,0x6a5440,0,.1)}}}}
+  if(o.over){for(let i=0;i<5;i++){const sd=Math.floor(rng()*4),t=rng(),vh=1+rng()*(h-1);B.box(sd<2?.4+rng()*.6:.08,vh,sd<2?.08:.4+rng()*.6,sd<2?x-w/2+t*w:(sd===2?x-w/2-.06:x+w/2+.06),h-vh/2,sd<2?(sd===0?z-d/2-.06:z+d/2+.06):z-d/2+t*d,0x2e3e26)}}
+  B.build();addSolid(x-w/2,z-d/2,x+w/2,z+d/2,0,h+(o.gable?0:.5));MAPD.bld.push([x,z,w,d,fl,o.name||'']);if(o.gable)gableRoof(x,z,w,d,h,w>=d?'x':'z',o.roof||ROOFS[Math.floor(rng()*ROOFS.length)])}
+function bgHouse(x,z,w,d,door,floors){bgBox(x,z,w,d,floors*3,SIDING[Math.floor(rng()*SIDING.length)],{gable:1,over:rng()<.5});porch(x,z,w,d,door)}
+/* shop fronts on Main Street: name board, sagging awning, enterable shell + interior */
+function facade(x,z,w,d,door,sign,o){const dir={s:[0,1],n:[0,-1],e:[1,0],w:[-1,0]}[door]||[0,1],fw=dir[0]?d:w,fx=x+dir[0]*(w/2+.06),fz=z+dir[1]*(d/2+.06),ry=Math.atan2(dir[0],dir[1]),fh=o.fh||3.6,B=new Batch();
+  if(sign)boardSign(fx+dir[0]*.02,fh-.2,fz+dir[1]*.02,ry,Math.min(fw-1,6),.9,sign,o.sbg||'#2e2a24',o.sfg||'#d8cfb6');
+  const aw=Math.min(fw-.6,7);B.box(dir[0]?1.6:aw,.08,dir[0]?aw:1.6,fx+dir[0]*.8,2.75,fz+dir[1]*.8,o.awn||0x5a2a22,0,.1);B.build()}
+function shop(x,z,w,d,door,name,sign,inside,o){o=o||{};const b=makeBuilding({x,z,w,d,floors:o.floors||1,fh:o.fh||3.6,door,doorW:o.doorW||2,col:o.col||[0x6e665a,0x5e5a52,0x7a6a5a,0x5a5e5a,0x6a5a4e][Math.floor(rng()*5)],
+    trim:0x3e3a34,floorC:0x3e3c38,roofC:0x2e2c2a,name,type:'shop',interior:inside,big:o.big!==false,stairs:o.stairs});facade(x,z,w,d,door,sign,o);return b}
+function bgShop(x,z,w,d,door,sign,floors){bgBox(x,z,w,d,(floors||1)*3.6,[0x6e665a,0x5e5a52,0x7a6a5a,0x5a5e5a,0x645a50][Math.floor(rng()*5)],{name:sign});facade(x,z,w,d,door,sign,{floors})}
+function dumpster(x,z,ry){const B=new Batch();B.box(1.9,1.25,1.1,x,.62,z,0x2e4a36,ry,.1);B.box(2,.08,1.2,x,1.3,z,0x22362a,ry);B.build();const c=Math.abs(Math.cos(ry||0))>.5;addSolid(x-(c?.95:.55),z-(c?.55:.95),x+(c?.95:.55),z+(c?.55:.95),0,1.3)}
+function container(x,z,ry,col,y){y=y||0;const B=new Batch(),c=Math.abs(Math.cos(ry))>.5,L=6,W=2.4;B.box(c?W:L,2.6,c?L:W,x,y+1.3,z,col,0,.05);for(let i=-2;i<=2;i++)B.box(c?W+.04:.06,2.4,c?.06:W+.04,x+(c?0:i*1.2),y+1.3,z+(c?i*1.2:0),col-0x080808);B.build();
+  addSolid(x-(c?W:L)/2,z-(c?L:W)/2,x+(c?W:L)/2,z+(c?L:W)/2,y,y+2.6)}
+function picket(a,b,c,d,col,h){const B=new Batch(),L=Math.hypot(c-a,d-b),ry=Math.atan2(c-a,d-b);h=h||.95;B.box(.05,.08,L,(a+c)/2,h*.7,(b+d)/2,col||0x8a8478,ry);B.box(.05,.08,L,(a+c)/2,h*.3,(b+d)/2,col||0x8a8478,ry);
+  for(let t=.3;t<L;t+=.45){if(rng()<.12)continue;B.box(.09,h*(.85+rng()*.15),.04,a+(c-a)*t/L,h*.45,b+(d-b)*t/L,col||0x8a8478,ry+(rng()-.5)*.15)}B.build();
+  for(let t=0;t<L;t+=1){const t2=Math.min(L,t+1),x1=a+(c-a)*t/L,z1=b+(d-b)*t/L,x2=a+(c-a)*t2/L,z2=b+(d-b)*t2/L;addSolid(Math.min(x1,x2)-.06,Math.min(z1,z2)-.06,Math.max(x1,x2)+.06,Math.max(z1,z2)+.06,0,h)}}
+function chain(a,b,c,d,h,gap){const B=new Batch(),L=Math.hypot(c-a,d-b),ry=Math.atan2(c-a,d-b),g0=gap?gap[0]:-1,g1=gap?gap[1]:-1;
+  for(let t=0;t<L;t+=1){const t2=Math.min(L,t+1);if(t>=g0&&t2<=g1)continue;const x1=a+(c-a)*t/L,z1=b+(d-b)*t/L,x2=a+(c-a)*t2/L,z2=b+(d-b)*t2/L;B.box(.03,h,t2-t,(x1+x2)/2,h/2,(z1+z2)/2,0x6a6e70,ry);addSolid(Math.min(x1,x2)-.05,Math.min(z1,z2)-.05,Math.max(x1,x2)+.05,Math.max(z1,z2)+.05,0,h)}
+  for(let t=0;t<=L;t+=2.5)B.box(.07,h+.15,.07,a+(c-a)*t/L,(h+.15)/2,b+(d-b)*t/L,0x4a4e50);B.build()}
+function overturned(x,z,ry,col){const B=new Batch(),cs=Math.cos(ry),sn=Math.sin(ry),W=(lx,lz)=>[x+lx*cs+lz*sn,z-lx*sn+lz*cs],bx=(w,h,d,lx,y,lz,c)=>{const [a,b]=W(lx,lz);B.box(w,h,d,a,y,b,c,ry,.1)};
+  bx(1.9,.8,4.3,0,1,0,col);bx(1.7,.6,2.1,0,.32,.25,col);bx(1.74,.4,1.7,0,.3,.25,0x14181c);[[-.92,1.4],[.92,1.4],[-.92,-1.4],[.92,-1.4]].forEach(([a,b])=>bx(.28,.62,.62,a,1.6,b,0x151515));B.build();
+  const hx=Math.abs(cs)*.95+Math.abs(sn)*2.15,hz=Math.abs(sn)*.95+Math.abs(cs)*2.15;addSolid(x-hx,z-hz,x+hx,z+hz,0,1.45);MAPD.cars.push([x,z,hx*2,hz*2])}
+function jersey(x,z,ry,n){const B=new Batch(),cs=Math.cos(ry),sn=Math.sin(ry);for(let i=0;i<n;i++){const o=(i-(n-1)/2)*3.1,cx=x+o*cs,cz=z-o*sn;B.box(3,.85,.6,cx,.42,cz,0x8a8880,ry,.05);const hx=Math.abs(cs)*1.5+Math.abs(sn)*.3,hz=Math.abs(sn)*1.5+Math.abs(cs)*.3;addSolid(cx-hx,cz-hz,cx+hx,cz+hz,0,.85)}B.build()}
+/* poles + sagging wires along a road curve (some snapped) */
+function poles(cur,side,from,every){const B=new Batch(),L=cur.getLength(),wires=[],tops=[];let k=0;for(let d=from;d<L-4;d+=every,k++){const t=d/L,p=cur.getPointAt(t),tg=cur.getTangentAt(t),nx=-tg.z,nz=tg.x,x=p.x+nx*side,z=p.z+nz*side,ry=Math.atan2(tg.x,tg.z),snap=k%9===5;
+    if(Math.abs(x)>WORLD-3||Math.abs(z)>WORLD-3||bldAt(x,z)||blockedAt(x,z,.3)||forestRoadD(x,z)<2.4||onLot(x,z)){tops.push(null);continue}const h=snap?2.4:7.6;B.box(.24,h,.24,x,h/2,z,0x4a3c30,snap?.3:0,.15);addSolid(x-.15,z-.15,x+.15,z+.15,0,h,{noClimb:1});
+    if(snap){tops.push({snap:1,x,z});continue}B.box(1.9,.12,.12,x,h-.4,z,0x3e3228,ry+Math.PI/2);const ox=Math.cos(ry)*.85,oz=-Math.sin(ry)*.85;tops.push({a:[x+ox,h-.3,z+oz],b:[x-ox,h-.3,z-oz]})}
+  const sag=(p,q,dip)=>{for(let i=0;i<8;i++){const t0=i/8,t1=(i+1)/8,y0=lerp(p[1],q[1],t0)-dip*4*t0*(1-t0),y1=lerp(p[1],q[1],t1)-dip*4*t1*(1-t1);wires.push(lerp(p[0],q[0],t0),y0,lerp(p[2],q[2],t0),lerp(p[0],q[0],t1),y1,lerp(p[2],q[2],t1))}};
+  for(let i=0;i+1<tops.length;i++){const A=tops[i],C=tops[i+1];if(!A||!C)continue;if(A.snap||C.snap){const T=A.snap?C:A,S2=A.snap?A:C;['a','b'].forEach(w=>sag(T[w],[S2.x+(w==='a'?.6:-.6),.05,S2.z+1.5],1.2));continue}sag(A.a,C.a,1.1);sag(A.b,C.b,1.3)}
+  B.build();const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(wires,3));scene.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0x14120f})))}
+function streetLight(x,z,ry,lit){const B=new Batch();B.box(.16,6,.16,x,3,z,0x3e4044);const ox=Math.sin(ry)*1.2,oz=Math.cos(ry)*1.2;B.box(.1,.1,1.3,x+ox/2,5.95,z+oz/2,0x3e4044,ry);B.build();addSolid(x-.1,z-.1,x+.1,z+.1,0,6,{noClimb:1});
+  const gl=mk(box(.5,.14,.3),new THREE.MeshBasicMaterial({color:lit?0xffd090:0x2a2a28}),x+ox,5.85,z+oz);gl.rotation.y=ry;gl.userData.noShadow=true;
+  if(lit){const L=new THREE.PointLight(0xffc880,1.1,16,1.6);L.position.set(x+ox,5.5,z+oz);scene.add(L);FOREST.lights.push({L,gl,base:1.1,ph:Math.random()*9,col:[1,.82,.56]})}}
+/* deciduous tree baked into one geometry (trunk + lumpy canopy), vertex coloured: one draw call per chunk */
+function oakGeo(n,lean){const parts=[],c=new THREE.Color();const add=(g,col)=>{g=g.index?g.toNonIndexed():g;const k=g.attributes.position.count,C=[];for(let i=0;i<k;i++)C.push(col.r,col.g,col.b);g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));g.deleteAttribute('uv');parts.push(g)};
+  /* thin trunk + a few crooked limbs, then a ragged crown of small clumps (no lollipops) */
+  add(new THREE.CylinderGeometry(.018,.032,.62,6).translate(0,.31,0),c.setRGB(.3,.26,.22).clone());
+  for(let i=0;i<4;i++){const a=i/4*TAU+.5,r=.5+(i%2)*.25;add(new THREE.CylinderGeometry(.006,.014,.28,4).translate(0,.14,0).rotateZ(r).rotateY(a).translate(0,.42+i*.05,0),c.setRGB(.28,.24,.2).clone())}
+  for(let i=0;i<n;i++){const a=i/n*TAU*1.6+(i%3)*.7,r=.05+((i*37)%10)/10*.17,y=.6+((i*53)%10)/10*.3,s=.07+((i*71)%10)/10*.07;
+    add(new THREE.IcosahedronGeometry(1,0).scale(s*1.3,s*(.75+((i*13)%10)/30),s*1.2).rotateY(i).translate(Math.cos(a)*r+(lean||0)*y,y,Math.sin(a)*r),c.setHSL(.2+((i*17)%10)/10*.06,.22+((i*29)%10)/10*.1,.13+((i*41)%10)/10*.08).clone())}
+  const G=new THREE.BufferGeometry();for(const [an,sz] of [['position',3],['normal',3],['color',3]]){let k=0;parts.forEach(g=>k+=g.attributes[an].array.length);const A=new Float32Array(k);let o=0;parts.forEach(g=>{A.set(g.attributes[an].array,o);o+=g.attributes[an].array.length});G.setAttribute(an,new THREE.BufferAttribute(A,sz))}return G}
+function waterTower(x,z){const B=new Batch(),H=22,leg=4.2;[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>{B.box(.45,H,.45,x+a*leg,H/2,z+b*leg,0x6a6e6a,0,.05);addSolid(x+a*leg-.25,z+b*leg-.25,x+a*leg+.25,z+b*leg+.25,0,H,{noClimb:1})});
+  for(let y=4;y<H;y+=6){B.box(leg*2,.18,.18,x,y,z-leg,0x5a5e5a);B.box(leg*2,.18,.18,x,y,z+leg,0x5a5e5a);B.box(.18,.18,leg*2,x-leg,y,z,0x5a5e5a);B.box(.18,.18,leg*2,x+leg,y,z,0x5a5e5a)}
+  B.box(.5,H,.1,x+leg+.3,H/2,z,0x3a3c3a);for(let y=.6;y<H;y+=.5)B.box(.5,.05,.12,x+leg+.3,y,z,0x3a3c3a);
+  B.box(14.4,.15,14.4,x,H,z,0x4a4c4a);B.build();
+  const tex=TTX.rust;tex.repeat.set(2,1);const tk=mk(new THREE.CylinderGeometry(6.6,6.6,7,16,1),new THREE.MeshLambertMaterial({map:tex,color:0xb0b4b0}),x,H+3.6,z);tk.castShadow=true;
+  const rf=mk(new THREE.ConeGeometry(6.9,3,16),mat(0x5a5e5c),x,H+8.6,z);rf.castShadow=true;mk(cyl(.15,.15,1.2,6),mat(0x3a3c3a),x,H+10.6,z)}
+function radioTower(x,z){const B=new Batch(),H=46;for(let i=0;i<3;i++){const a=i/3*TAU,r0=2.6,ox=Math.cos(a),oz=Math.sin(a);const n=10;for(let k=0;k<n;k++){const y0=k*H/n,y1=(k+1)*H/n,r=r0*(1-y0/H)+.25,r1=r0*(1-y1/H)+.25;
+    B.box(.14,H/n+.05,.14,x+ox*(r+r1)/2,(y0+y1)/2,z+oz*(r+r1)/2,0x8a3a2a,0);if(k%2===0)B.box(r*1.6,.08,.08,x+ox*r*.5,y0+.5,z+oz*r*.5,0x8a3a2a,-a)}}
+  B.box(6,.3,6,x,.15,z,0x6a6a66);B.build();addSolid(x-3,z-3,x+3,z+3,0,.3);addSolid(x-1.2,z-1.2,x+1.2,z+1.2,0,8,{noClimb:1});
+  const gl=mk(new THREE.SphereGeometry(.35,8,6),new THREE.MeshBasicMaterial({color:0xff2a1a}),x,H+.4,z);gl.userData.noShadow=true;FOREST.blink.push(gl)}
+function forestLights(dt){const t=performance.now()/1000,night=S&&isNight(sunElev(S.t));
+  if(FOREST.mistM){const cp=camera.position;FOREST.mistM.opacity=night?.2:.13;FOREST.mistM.color.setHex(night?0x6a7890:0xc8ccc4);for(const m of FOREST.mist){m.position.x+=m.userData.v*dt;const dx=m.position.x-cp.x,dz=m.position.z-cp.z;if(dx*dx+dz*dz>30*30){const a=Math.random()*TAU,r=9+Math.random()*19;m.position.set(cp.x+Math.cos(a)*r,.5+Math.random()*.8,cp.z+Math.sin(a)*r)}}}
+  for(const f of FOREST.lights){let k=night?1:.1;if(Math.sin(t*7.3+f.ph)>.94||Math.random()<.006)k*=.15;f.L.intensity=f.base*k;const c=f.col||[1,.69,.35],kk=Math.max(.2,k);f.gl.material.color.setRGB(c[0]*kk,c[1]*kk,c[2]*kk)}
+  const on=Math.sin(t*2.2)>.6;for(const g of FOREST.blink)g.material.color.setHex(on?0xff2a1a:0x3a0a06)}
 function pineMesh(g,s){const tm=mat(0x4a3628),c1=mat(0x24361f),c2=mat(0x2c4226);mk(cyl(.12*s,.22*s,2.2*s,6),tm,0,1.1*s,0,g);
   [[2.3,1.9,1.8],[3.3,1.5,1.5],[4.2,1.05,1.2]].forEach(([y,r,h],i)=>mk(new THREE.ConeGeometry(r*s,h*s*1.3,7),i%2?c2:c1,0,y*s,0,g));mergeKids(g)}
 function forestSign(x,z,ry,lines){const c=document.createElement('canvas');c.width=256;c.height=96;const g=c.getContext('2d');g.fillStyle='#5a4128';g.fillRect(0,0,256,96);g.strokeStyle='#2e2014';g.lineWidth=6;g.strokeRect(3,3,250,90);
@@ -1369,7 +1478,6 @@ function forestSign(x,z,ry,lines){const c=document.createElement('canvas');c.wid
   const bk=mk(new THREE.PlaneGeometry(1.4,.52),mat(0x5a4128),0,1.55,.06,p);bk.rotation.y=Math.PI;addSolid(x-.1,z-.1,x+.1,z+.1,0,1.8)}
 function lantern(x,y,z,light){const g=new THREE.Group();g.position.set(x,y,z);scene.add(g);mk(box(.18,.26,.18),mat(0x2a2620),0,0,0,g);const gl=mk(box(.13,.18,.13),new THREE.MeshBasicMaterial({color:0xffb05a}),0,0,0,g);gl.userData.noShadow=true;
   if(light){const L=new THREE.PointLight(0xff9a48,1.25,13,1.6);L.position.set(x,y-.1,z);scene.add(L);FOREST.lights.push({L,gl,base:1.25,ph:Math.random()*9})}return g}
-function forestLights(dt){const t=performance.now()/1000,night=S&&isNight(sunElev(S.t));if(FOREST.mistM){const cp=camera.position;FOREST.mistM.opacity=night?.2:.13;FOREST.mistM.color.setHex(night?0x6a7890:0xc8ccc4);for(const m of FOREST.mist){m.position.x+=m.userData.v*dt;const dx=m.position.x-cp.x,dz=m.position.z-cp.z;if(dx*dx+dz*dz>30*30){const a=Math.random()*TAU,r=9+Math.random()*19;m.position.set(cp.x+Math.cos(a)*r,.5+Math.random()*.8,cp.z+Math.sin(a)*r)}}}for(const f of FOREST.lights){let k=night?1:.15;if(Math.sin(t*7.3+f.ph)>.96||Math.random()<.004)k*=.25;f.L.intensity=f.base*k;f.gl.material.color.setRGB(1*Math.max(.25,k),.69*Math.max(.25,k),.35*Math.max(.25,k))}}
 function gableRoof(x,z,w,d,ry0,along,col){const B=new Batch(),h=1.5,L=along==='x'?w+.6:d+.6,half=(along==='x'?d:w)/2+.35,sl=Math.hypot(half,h),a=Math.atan2(h,half);
   for(const sd of [-1,1]){const g=new THREE.Mesh(new THREE.BoxGeometry(along==='x'?L:sl,.14,along==='x'?sl:L),mat(col));
     if(along==='x'){g.position.set(x,ry0+h/2+.05,z+sd*half/2);g.rotation.x=sd*a}else{g.position.set(x+sd*half/2,ry0+h/2+.05,z);g.rotation.z=-sd*a}g.castShadow=true;scene.add(g)}
@@ -1383,81 +1491,9 @@ function cabin(x,z,w,d,door,name,inside,floors,stairs){
   const B=new Batch();B.box(pw,.25,pd,px,.125,pz,0x5a4030);B.build();addSolid(px-pw/2,pz-pd/2,px+pw/2,pz+pd/2,0,.25);
   lantern(x+o[0]*(w/2+.25)+(o[1]?1.1:0),2.3,z+o[1]*(d/2+.25)+(o[0]?1.1:0),!!cabin.lit&&cabin.lit-->0);return b}
 cabin.lit=1;
-/* ---- roadside: bridge, power lines, wrecks, barricades, signs ---- */
 function wreck(x,z,ry,col){const B=new Batch(),cs=Math.cos(ry),sn=Math.sin(ry),W=(lx,lz)=>[x+lx*cs+lz*sn,z-lx*sn+lz*cs],bx=(w,h,d,lx,y,lz,c)=>{const [a,b]=W(lx,lz);B.box(w,h,d,a,y,b,c,ry,.12)};
   bx(1.9,.8,4.3,0,.65,0,col);bx(1.7,.62,2.1,0,1.36,.25,col);bx(1.74,.42,1.7,0,1.42,.25,0x14181c);[[-.92,1.4],[.92,1.4],[-.92,-1.4],[.92,-1.4]].forEach(([a,b],i)=>{if(i!==2||rng()<.5)bx(.28,.62,.62,a,.31,b,0x151515)});bx(1.95,.12,.2,0,.5,2.18,0x5a5650);B.build();
   const hx=Math.abs(cs)*.95+Math.abs(sn)*2.15,hz=Math.abs(sn)*.95+Math.abs(cs)*2.15;addSolid(x-hx,z-hz,x+hx,z+hz,0,1.65);MAPD.cars.push([x,z,hx*2,hz*2])}
-function forestRoadside(){
-  const B=new Batch();
-  /* road bridge over the creek */
-  {const zc=FOREST.creek(17);for(let i=0;i<12;i++)B.box(5,.14,.56,17,.25,zc-3.3+i*.6,i%2?0x6b4a30:0x5e4229,0,.1);[-2.55,2.55].forEach(sx=>{B.box(.16,.7,6.8,17+sx,.62,zc,0x4a3424);[-3.2,-1,1,3.2].forEach(o=>B.box(.2,1,.2,17+sx,.5,zc+o,0x3d2b1c))});
-    addSolid(14.5,zc-3.6,19.5,zc+3.6,0,.32);[-2.55,2.55].forEach(sx=>addSolid(17+sx-.1,zc-3.5,17+sx+.1,zc+3.5,0,1))}
-  /* power poles down the main road, a couple snapped, sagging dead wires */
-  {const cur=FOREST.roadCur,L=cur.getLength(),wires=[],tops=[];let k=0;for(let d=10;d<L-8;d+=22,k++){const t=d/L,p=cur.getPointAt(t),tg=cur.getTangentAt(t),nx=-tg.z,nz=tg.x,x=p.x+nx*4.4,z=p.z+nz*4.4,ry=Math.atan2(tg.x,tg.z),snap=k%7===4;
-      if(Math.abs(x)>WORLD-3||Math.abs(z)>WORLD-3){tops.push(null);continue}const h=snap?2.6:7.4;B.box(.24,h,.24,x,h/2,z,0x4a3c30,0,.15);addSolid(x-.15,z-.15,x+.15,z+.15,0,h,{noClimb:1});
-      if(snap){tops.push({snap:1,x,z,h});continue}B.box(1.9,.12,.12,x,h-.4,z,0x3e3228,ry+Math.PI/2);const ox=Math.cos(ry)*.85,oz=-Math.sin(ry)*.85;tops.push({a:[x+ox,h-.3,z+oz],b:[x-ox,h-.3,z-oz]})}
-    const sag=(p,q,dip)=>{for(let i=0;i<10;i++){const t0=i/10,t1=(i+1)/10,y0=lerp(p[1],q[1],t0)-dip*4*t0*(1-t0),y1=lerp(p[1],q[1],t1)-dip*4*t1*(1-t1);wires.push(lerp(p[0],q[0],t0),y0,lerp(p[2],q[2],t0),lerp(p[0],q[0],t1),y1,lerp(p[2],q[2],t1))}};
-    for(let i=0;i+1<tops.length;i++){const A=tops[i],C=tops[i+1];if(!A||!C)continue;if(A.snap||C.snap){const T=A.snap?C:A,S2=A.snap?A:C;['a','b'].forEach(w=>sag(T[w],[S2.x+(w==='a'?.6:-.6),.05,S2.z+1.5],1.2));continue}sag(A.a,C.a,1.1);sag(A.b,C.b,1.3)}
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(wires,3));scene.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0x14120f})))}
-  /* barricades where the road leaves the valley */
-  [[14,104,0],[52,-104,.2]].forEach(([x,z,ry])=>{for(let i=-2;i<=2;i++)B.box(.9,.22,.12,x+i*.9*Math.cos(ry),.85,z-i*.9*Math.sin(ry),i%2?0xd8d2c0:0xa83a2a,ry);[-1.9,1.9].forEach(o=>B.box(.12,1,.5,x+o*Math.cos(ry),.5,z-o*Math.sin(ry),0x5a5650,ry));
-    addSolid(x-2.2,z-.5,x+2.2,z+.5,0,1);forestSign(x+3.6,z+(z>0?-1:1),z>0?0:Math.PI,['ROAD CLOSED','QUARANTINE'])});
-  B.build();
-  forestSign(20.6,82,0,['PINE HOLLOW','POP. 212']);forestSign(21,-40,Math.PI,['LUMBER CO  ^','FARM  <']);forestSign(-36,-48.5,Math.PI/2,['MERRICK','FARM']);
-  wreck(15.5,66,.35,0x5a6a72);wreck(21.5,-30,2.6,0x7a3a2a);wreck(4,-41,1.9,0x8a8270);wreck(46.5,-66,-.6,0x3a4a3a);
-  /* things out of place in the woods: a chair facing a tree, stone cairns */
-  {const B2=new Batch();[[-80,30],[60,56],[-30,96],[74,-40],[-14,-70],[88,10]].forEach(([x,z],i)=>{if(blockedAt(x,z,1)||bldAt(x,z))return;if(i===0){B2.box(.45,.06,.45,x,.46,z,0x6a5040);B2.box(.45,.5,.06,x,.72,z-.2,0x6a5040);[[-.2,-.2],[.2,-.2],[-.2,.2],[.2,.2]].forEach(([a,b])=>B2.box(.05,.44,.05,x+a,.22,z+b,0x5a4030))}
-    else{let y=0;for(let j=0;j<4+i%3;j++){const w=.55-j*.08;B2.box(w,.18,w*.9,x,y+.09,z,0x6f716b,j*.7);y+=.18}}addSolid(x-.3,z-.3,x+.3,z+.3,0,.9)});B2.build()}
-}
-/* ---- Merrick farm: open meadow you can see across, barn, farmhouse, pasture ---- */
-function forestFarm(){const F=FOREST.meadow;
-  const barn=makeBuilding({x:F[0]-8,z:F[1]-6,w:12,d:9,floors:1,fh:4.2,door:'e',doorW:3,col:0x6a2a22,trim:0x3e1c18,floorC:0x4a3a2a,roofC:0x3a2420,name:'BARN',type:'house',
-    interior:(B,b,f,y)=>{[[1.2,1.2],[1.2,2.5],[2.5,1.2]].forEach(([a,c])=>propBox(B,1.2,1.1,1.2,b.x1+a,y,b.z1+c,0xb89a5a));propBox(B,1.2,1.1,1.2,b.x1+1.2,y+1.1,b.z1+1.2,0xb09050);
-      /* old tractor */propBox(B,1.4,1.2,2.6,b.x2-3,y,b.z2-2.2,0x7a3a22);B.box(.3,1.2,1.2,b.x2-3.85,y+.6,b.z2-1.4,0x161616);B.box(.3,1.2,1.2,b.x2-2.15,y+.6,b.z2-1.4,0x161616);B.box(.9,.8,.9,b.x2-3,y+1.6,b.z2-1.4,0x1a1e22);
-      lootSpot('crate',b.x1+1.2,y,b.z2-1.2);lootSpot('shelf',(b.x1+b.x2)/2,y,b.z2-.9);lootSpot('crate',b.x1+3.8,y,b.z1+1)}});
-  gableRoof(F[0]-8,F[1]-6,12,9,5.2,'x',0x3a2420);
-  cabin(F[0]+8,F[1]+8,8,7,'n','FARMHOUSE',(B,b,f,y)=>{const cx=(b.x1+b.x2)/2;if(f===0){furniture(cx+1.2,y,b.z2-1.8,'table',0);furniture(cx+1.8,y,b.z1+1.4,'couch',Math.PI);lootSpot('fridge',b.x2-.7,y,b.z2-1);lootSpot('cabinet',b.x2-.8,y,b.z1+2.2)}
-    else{furniture(b.x2-1.3,y,b.z2-1.6,'bed',0);lootSpot('desk',cx+.8,y,b.z1+.9);lootSpot('crate',cx,y,b.z2-.9)}},2,{x1:F[0]+4.4,x2:F[0]+5.9,z1:F[1]+5.2,z2:F[1]+9.8});
-  const B=new Batch();
-  /* pasture fence (vault it), gate gap on the east */
-  {const x1=F[0]-22,x2=F[0]-6,z1=F[1]+5,z2=F[1]+19,rail=(a,b,c,d)=>{const L=Math.hypot(c-a,d-b),ry=Math.atan2(c-a,d-b);[.45,.9].forEach(y=>B.box(.07,.1,L,(a+c)/2,y,(b+d)/2,0x6a5038,ry));for(let t=0;t<=L;t+=2.4)B.box(.14,1.1,.14,a+(c-a)*t/L,.55,b+(d-b)*t/L,0x4e3a28);addSolid(Math.min(a,c)-.07,Math.min(b,d)-.07,Math.max(a,c)+.07,Math.max(b,d)+.07,0,1.05)};
-    rail(x1,z1,x2,z1);rail(x1,z2,x2,z2);rail(x1,z1,x1,z2);rail(x2,z1,x2,z1+5.5);rail(x2,z1+8.5,x2,z2)}
-  /* scarecrow in the middle of the field, facing the road */
-  {const x=F[0]+2,z=F[1]-1;B.box(.12,2.6,.12,x,1.3,z,0x4a3828);B.box(1.7,.1,.1,x,2,z,0x4a3828);B.box(.6,.8,.3,x,1.75,z,0x5a4a32,0,.2);B.box(.34,.4,.32,x,2.45,z,0xb8a878);B.box(.5,.08,.5,x,2.68,z,0x2a2420);
-    [-.75,.75].forEach(o=>B.box(.22,.5,.14,x+o,1.75,z,0x4a3e2a));addSolid(x-.1,z-.1,x+.1,z+.1,0,2.6)}
-  /* well, round hay bales */
-  {const x=F[0]+4,z=F[1]-10;for(let i=0;i<8;i++){const a=i/8*TAU;B.box(.5,.75,.5,x+Math.cos(a)*.9,.37,z+Math.sin(a)*.9,0x6f716b,-a)}B.box(.1,1.6,.1,x-.9,1.2,z,0x4a3828);B.box(.1,1.6,.1,x+.9,1.2,z,0x4a3828);B.box(2,.1,.1,x,2,z,0x4a3828);addSolid(x-1.2,z-1.2,x+1.2,z+1.2,0,.75)}
-  [[F[0]-17,F[1]-3],[F[0]-17,F[1]-7.5],[F[0]+12,F[1]-12]].forEach(([x,z])=>{const m=mk(cyl(.7,.7,1.3,10),mat(0xa8904c),x,.7,z);m.rotation.z=Math.PI/2;m.castShadow=m.receiveShadow=true;addSolid(x-.65,z-.7,x+.65,z+.7,0,1.35)});
-  B.build();
-  /* one dead oak in the meadow */
-  {const g=new THREE.Group(),x=F[0]-2,z=F[1]+8;g.position.set(x,0,z);scene.add(g);mk(cyl(.22,.42,4.2,6),mat(0x3e342c),0,2.1,0,g);[[.9,3.4,.6,1],[-.8,3,.4,-1],[.2,3.9,-.8,.5]].forEach(([a,y,c,r])=>{const b=mk(cyl(.06,.14,2.6,5),mat(0x3e342c),a*.6,y,c*.6,g);b.rotation.set(c,0,-r*.9)});setShadow(g);addSolid(x-.35,z-.35,x+.35,z+.35,0,4,{noClimb:1})}
-}
-/* ---- Pine Hollow Lumber: logging camp up the north road ---- */
-function forestLogging(){const L=FOREST.logCamp;
-  makeBuilding({x:L[0]-9,z:L[1]+6,w:8,d:4,floors:1,fh:2.7,door:'e',col:0xb0a890,trim:0x6a6458,floorC:0x5a554a,roofC:0x4a4640,name:'LUMBER OFFICE',type:'house',
-    interior:(B,b,f,y)=>{desk(B,b.x1+1.4,y,b.z1+.9,0);lootSpot('cabinet',b.x1+.7,y,b.z2-.8);lootSpot('crate',b.x2-2,y,b.z2-.8)}});
-  lantern(L[0]-4.75,2.2,L[1]+7.2,true);
-  const B=new Batch();
-  /* open sawmill shed */
-  {const x=L[0]+1,z=L[1]-9;[[-4.8,-2.8],[4.8,-2.8],[-4.8,2.8],[4.8,2.8],[0,-2.8],[0,2.8]].forEach(([a,b])=>{B.box(.25,4,.25,x+a,2,z+b,0x4a3828);addSolid(x+a-.13,z+b-.13,x+a+.13,z+b+.13,0,4)});
-    B.box(10.4,.18,6.4,x,4.1,z,0x4a4844);propBox(B,5,.9,1.2,x,0,z,0x5a4a3a);B.box(.06,1.3,1.3,x+1,1.1,z,0x9a9a96);propBox(B,1.6,1.1,1.4,x-3.6,0,z+1.6,0x6a6a5a);lootSpot('crate',x+3.8,0,z+1.8)}
-  /* log piles: climb them */
-  [[L[0]-8,L[1]-5],[L[0]-1,L[1]+9]].forEach(([x,z])=>{[[3,0],[2,1],[1,2]].forEach(([n2,row])=>{for(let i=0;i<n2;i++){const m=mk(cyl(.36,.36,6,7),new THREE.MeshLambertMaterial({color:0x8a7462,map:FTX.bark}),x,.36+row*.62,z+(i-(n2-1)/2)*.74);m.rotation.z=Math.PI/2;m.castShadow=m.receiveShadow=true}});addSolid(x-3,z-1.1,x+3,z+1.1,0,1.75)});
-  /* logging truck loaded up */
-  {const x=L[0]+4.5,z=L[1];B.box(2.2,1.3,2.4,x,1.1,z+3.6,0x8a6a1a);B.box(2.24,.6,1.9,x,1.95,z+3.4,0x1a1e22);B.box(2.2,.3,6,x,.9,z-.8,0x2a2622);[[-1,3.6],[1,3.6],[-1,-.5],[1,-.5],[-1,-2.6],[1,-2.6]].forEach(([a,b])=>B.box(.3,.8,.8,x+a,.4,z+b,0x141414));
-    for(let i=0;i<3;i++)B.box(.6,.6,6.2,x-.7+i*.7,1.38,z-.8,0x7a6452);B.box(.6,.6,6.2,x-.35,1.95,z-.8,0x7a6452);B.box(.6,.6,6.2,x+.35,1.95,z-.8,0x6e5848);addSolid(x-1.1,z-3.8,x+1.1,z+4.8,0,2.3)}
-  B.build();forestSign(L[0]+7.5,L[1]+13,0,['PINE HOLLOW','LUMBER CO.'])}
-/* ---- the chapel in the dark woods, with a graveyard ---- */
-function forestChapel(){const H=[-58,63];cabin.lit=1;
-  cabin(H[0],H[1],6,10,'n','CHAPEL',(B,b,f,y)=>{const cx=(b.x1+b.x2)/2;for(let i=0;i<4;i++)[-1.4,1.4].forEach(o=>propBox(B,1.6,.5,.45,cx+o,y,b.z1+2.4+i*1.5,0x4a3424));propBox(B,1.6,1,.8,cx,y,b.z2-1,0x6a5a48);B.box(.06,.9,.06,cx,y+1.45,b.z2-1,0x2a2420);B.box(.5,.06,.06,cx,y+1.65,b.z2-1,0x2a2420);
-    lootSpot('cabinet',b.x1+.7,y,b.z2-1.2);lootSpot('crate',b.x2-.7,y,b.z2-1.8)});
-  const B=new Batch();B.box(1.5,3,1.5,H[0],6.4,H[1]-4,0x5e4430);B.box(.08,1.2,.08,H[0],10.7,H[1]-4,0x2a2420);B.box(.6,.08,.08,H[0],10.9,H[1]-4,0x2a2420);
-  {const sp=mk(new THREE.ConeGeometry(1.2,2.4,4),mat(0x2e2420),H[0],9.1,H[1]-4);sp.rotation.y=Math.PI/4;sp.castShadow=true}
-  /* graveyard to the east */
-  for(let r=0;r<4;r++)for(let c=0;c<3;c++){const x=H[0]+5.5+c*1.8,z=H[1]-3+r*2.2;if(r===2&&c===1){B.box(1,.03,2,x,.02,z,0x161210);B.box(1.1,.35,.8,x+1.2,.17,z,0x3a2e22);continue}
-    if((r+c)%4===3){B.box(.08,1,.08,x,.5,z,0x4a3828);B.box(.5,.08,.08,x,.75,z,0x4a3828)}else B.box(.55,.7+rng()*.3,.14,x,.4,z,0x7d7f78,(rng()-.5)*.3,.15);addSolid(x-.3,z-.1,x+.3,z+.1,0,.9)}
-  B.build()}
-FOREST.logCamp=[40,-86];
 /* merge static forest meshes per material + 48 m area: hundreds of draw calls -> a few dozen (resources, lights, signs' groups untouched) */
 function mergeStatic(from){const refs=new Set();resources.forEach(r=>[r.g,r.extra,r.col].forEach(o=>o&&o.isObject3D&&refs.add(o)));const groups=new Map(),v=new THREE.Vector3();
   scene.children.slice(from).forEach(o=>{if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||!o.visible||refs.has(o)||o.children.length||Array.isArray(o.material)||!o.geometry.attributes.normal)return;
@@ -1470,125 +1506,176 @@ function mergeStatic(from){const refs=new Set();resources.forEach(r=>[r.g,r.extr
     geos.forEach(g=>g.dispose());G.computeBoundingSphere();const M=new THREE.Mesh(G,m);M.castShadow=list.some(o=>o.castShadow);M.receiveShadow=list.some(o=>o.receiveShadow);M.renderOrder=list[0].renderOrder;scene.add(M);list.forEach(o=>scene.remove(o));merged+=list.length}
   return merged}
 function buildForest(){
-  const c0=scene.children.length;noZones.length=0;forestPaths();
-  /* sky/stone/bush colours for the forest */
-  rockMs[0].color.setHex(0x6f716b);rockMs[1].color.setHex(0x5b5d58);rockMs[2].color.setHex(0x7d7f78);bushM.color.setHex(0x3c5a30);
-  /* ground: forest floor (textured), darker deep woods, dry meadow grass */
-  {const S2=WORLD*2+40,g=new THREE.PlaneGeometry(S2,S2,130,130);g.rotateX(-Math.PI/2);const p=g.attributes.position,c=new THREE.Color(),cs=[],M=FOREST.meadow;
-    for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),n=Math.sin(x*.09)*Math.cos(z*.08)+Math.sin(x*.23+z*.17)*.5,td=forestTrailD(x,z),rd=forestRoadD(x,z),cd=Math.abs(z-FOREST.creek(x)),dk=forestDark(x,z),md=clamp((M[2]+4-Math.hypot(x-M[0],z-M[1]))/8,0,1);
-      if(cd<FOREST.creekW/2+.6)c.setHSL(.1,.25,.12+rng()*.02);else if(td<1.4||rd<3)c.setHSL(.08,.3,.22+n*.02+rng()*.02);else c.setHSL(.2+n*.03-.06*md,.3+.1*md,.15+n*.025+rng()*.025+.08*md-.05*dk);cs.push(c.r,c.g,c.b)}
+  const c0=scene.children.length;noZones.length=0;
+  rockMs[0].color.setHex(0x5f605a);rockMs[1].color.setHex(0x4e4f4a);rockMs[2].color.setHex(0x6a6b64);bushM.color.setHex(0x34482a);
+  /* parking lots first (roads + trees avoid them) */
+  lot(-116,104,-74,150);lot(-136,25,-116,62);lot(97,-62,107,-34);lot(160,100,206,140);lot(-87,-212,-77,-190);lot(-22,-26,34,-20.5);lot(110,120,146,128);
+  forestPaths();
+  /* ground: grass gone to seed, bare dirt in lots/yards, darker under the woods */
+  {const S2=WORLD*2+40,g=new THREE.PlaneGeometry(S2,S2,110,110);g.rotateX(-Math.PI/2);const p=g.attributes.position,c=new THREE.Color(),cs=[];
+    for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),n=Math.sin(x*.09)*Math.cos(z*.08)+Math.sin(x*.23+z*.17)*.5,rd=forestRoadD(x,z),cd=Math.abs(z-FOREST.creek(x)),dk=forestDark(x,z),td=forestTrailD(x,z);
+      if(cd<FOREST.creekW/2+.7)c.setHSL(.1,.12,.2+rng()*.02);else if(rd<3.4||td<1.6||onLot(x,z,1))c.setHSL(.09,.16,.2+n*.02+rng()*.02);else c.setHSL(.19+n*.03,.26,.15+n*.022+rng()*.025-.05*dk);cs.push(c.r,c.g,c.b)}
     g.setAttribute('color',new THREE.Float32BufferAttribute(cs,3));const t=FTX.ground;t.repeat.set(S2/3.2,S2/3.2);mk(g,new THREE.MeshLambertMaterial({vertexColors:true,map:t})).receiveShadow=true}
-  /* creek: dark water ribbon + stones, a plank footbridge on the trail */
-  {const pts=[],idx=[];let k=0;for(let x=-WORLD-20;x<=WORLD+20;x+=2){const z=FOREST.creek(x);pts.push(x,.04,z-FOREST.creekW/2,x,.04,z+FOREST.creekW/2);if(k){const a=(k-1)*2;idx.push(a,a+1,a+2,a+1,a+3,a+2)}k++}
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));g.setIndex(idx);g.computeVertexNormals();
-    const w=mk(g,new THREE.MeshPhongMaterial({color:0x14202a,specular:0x6a7a88,shininess:70,transparent:true,opacity:.92}));w.receiveShadow=true;
-    const B=new Batch();for(let i=0;i<130;i++){const x=(rng()*2-1)*WORLD,z=FOREST.creek(x)+(rng()-.5)*(FOREST.creekW+1.2);B.box(.3+rng()*.5,.15+rng()*.12,.3+rng()*.4,x,.07,z,0x5d5f5a,rng()*3)}
-    const zc=FOREST.creek(0);for(let i=0;i<9;i++)B.box(2.2,.1,.5,0,.24,zc-2.4+i*.6,i%2?0x6b4a30:0x5e4229);[-1.15,1.15].forEach(sx=>{B.box(.1,.9,5.6,sx,.65,zc,0x4a3424);[-2.6,0,2.6].forEach(o=>B.box(.12,1,.12,sx,.5,zc+o,0x3d2b1c))});
-    B.build();addSolid(-1.1,zc-2.7,1.1,zc+2.7,0,.28);[-1.15,1.15].forEach(sx=>addSolid(sx-.05,zc-2.8,sx+.05,zc+2.8,0,1.1))}
-  /* ---- cabin cluster around a clearing (north-west) ---- */
-  const C=[-30,-15];
-  const kit=(B,b,f,y)=>{const cx=(b.x1+b.x2)/2,cz=(b.z1+b.z2)/2;furniture(cx-1,y,cz+.4,'table',0);propBox(B,.8,1.8,.7,b.x2-.7,y,b.z1+.7,0xd8d4cc);lootSpot('fridge',b.x2-.7,y,b.z1+1.4);lootSpot('cabinet',b.x1+.8,y,b.z1+1.4)};
-  const bed=(B,b,f,y)=>{const cx=(b.x1+b.x2)/2,cz=(b.z1+b.z2)/2;furniture(b.x1+1.1,y,cz,'bed',0);furniture(b.x2-1,y,b.z1+.8,'dresser',Math.PI);lootSpot('desk',b.x2-1,y,b.z1+1.6);lootSpot('crate',cx,y,b.z2-.9)};
-  cabin(C[0]-9,C[1]-6,7,6,'e','CABIN',kit);cabin(C[0]+9,C[1]-7,7,6,'w','CABIN',bed);cabin(C[0]-9,C[1]+8,7,6,'e','CABIN',bed);cabin(C[0]+8.5,C[1]+8,7,6,'w','CABIN',kit);
-  cabin(C[0],C[1]-15,10,8,'s','LODGE',(B,b,f,y)=>{const cx=(b.x1+b.x2)/2;if(f===0){furniture(cx+1.5,y,b.z1+2,'couch',0);furniture(cx+2,y,b.z2-1.6,'table',0);lootSpot('cabinet',b.x2-.8,y,b.z2-1.4)}else{furniture(b.x2-1.4,y,b.z1+1.4,'bed',0);lootSpot('desk',cx+1,y,b.z1+.9);lootSpot('crate',b.x2-1,y,b.z2-1)}},2,{x1:C[0]-4.4,x2:C[0]-2.9,z1:C[1]-18.4,z2:C[1]-13})
-  ;{const B=new Batch();for(let i=0;i<7;i++){const a=i/7*TAU;B.box(.4,.25,.4,C[0]+Math.cos(a)*.75,.12,C[1]+Math.sin(a)*.75,0x6f716b)}B.box(.9,.12,.12,C[0],.15,C[1],0x2a2018,.6);B.box(.9,.12,.12,C[0],.18,C[1],0x2a2018,-.6);
-    for(let i=0;i<4;i++)B.box(.5,.45,2.4,C[0]-3+i*2,.22,C[1]+4.2,0x5a4030);B.box(2.4,.8,1.2,C[0]+4,.4,C[1]-3,0x6b4a30);B.build();addSolid(C[0]+2.8,C[1]-3.6,C[0]+5.2,C[1]-2.4,0,.8)}   /* fire pit, woodpile, table */
-  lantern(C[0]+.0,2.8,C[1]-2.5,true);{const B=new Batch();B.box(.12,2.8,.12,C[0],1.4,C[1]-2.5,0x3a2a1c);B.build()}
-  /* ---- ranger station (north-east): the good loot ---- */
-  const R=[32,-29];
-  makeBuilding({x:R[0],z:R[1],w:12,d:9,floors:2,fh:3,door:'s',col:0x5a5f4a,trim:0x3e4234,floorC:0x4a4a40,roofC:0x34382c,name:'RANGER STATION',type:'house',stairs:{x1:R[0]-5.4,x2:R[0]-3.9,z1:R[1]-4,z2:R[1]+1.5},
-    interior:(B,b,f,y)=>{if(f===0){desk(B,R[0]+2,y,R[1]-2.5,0);lootSpot('cabinet',R[0]+5.2,y,R[1]-3.6);lootSpot('mil',R[0]+4.5,y,R[1]+3.2)}else{lootSpot('mil',R[0]+4.5,y,R[1]-3.2);lootSpot('mil',R[0]+1,y,R[1]+3.2);furniture(R[0]+4,y,R[1]+1,'bed',Math.PI/2);lootSpot('desk',R[0]-1,y,R[1]-3.6)}}});
-  lantern(R[0]+1.6,2.4,R[1]+4.75,true);
-  forestSign(R[0]-3,R[1]+7.5,0,['RANGER','STATION']);
-  /* chain-link fence with a gap at the gate: vault it or walk round */
-  {const B=new Batch(),fx1=R[0]-9,fx2=R[0]+9,fz1=R[1]-8,fz2=R[1]+9,hgt=1.15,seg=(a,b,c,d)=>{const w=Math.abs(c-a)||.06,dd=Math.abs(d-b)||.06;B.box(w,hgt,dd,(a+c)/2,hgt/2,(b+d)/2,0x6a6e70);addSolid(Math.min(a,c)-.03,Math.min(b,d)-.03,Math.max(a,c)+.03,Math.max(b,d)+.03,0,hgt)};
-    seg(fx1,fz1,fx2,fz1);seg(fx1,fz1,fx1,fz2);seg(fx2,fz1,fx2,fz2);seg(fx1,fz2,R[0]-2,fz2);seg(R[0]+2,fz2,fx2,fz2);
-    for(let x=fx1;x<=fx2;x+=3){B.box(.08,1.4,.08,x,.7,fz1,0x4a4e50);B.box(.08,1.4,.08,x,.7,fz2,0x4a4e50)}B.build()}
-  /* lookout tower: a long ramp up to a 5 m platform */
-  {const T=[44,-19.5],B=new Batch(),top=5;[[-1.4,-1.4],[1.4,-1.4],[-1.4,1.4],[1.4,1.4]].forEach(([a,b])=>{B.box(.22,top,.22,T[0]+a,top/2,T[1]+b,0x4a3424);addSolid(T[0]+a-.11,T[1]+b-.11,T[0]+a+.11,T[1]+b+.11,0,top)});
-    B.box(3.2,.2,3.2,T[0],top-.1,T[1],0x5a4030);addSolid(T[0]-1.6,T[1]-1.6,T[0]+1.6,T[1]+1.6,top-.2,top);
-    [[0,-1.6,3.2,.08],[0,1.6,3.2,.08],[1.6,0,.08,3.2]].forEach(([a,b,w,d])=>{B.box(w,1,d,T[0]+a,top+.5,T[1]+b,0x4a3424);addSolid(T[0]+a-w/2,T[1]+b-d/2,T[0]+a+w/2,T[1]+b+d/2,top,top+1)});
-    B.box(3.4,.12,3.4,T[0],top+2.4,T[1],0x3b2a1e);[[-1.5,-1.5],[1.5,-1.5],[-1.5,1.5],[1.5,1.5]].forEach(([a,b])=>B.box(.1,2.4,.1,T[0]+a,top+1.2,T[1]+b,0x4a3424));
-    const rx1=T[0]-1.6-1.5,rx2=T[0]-1.6,rz1=T[1]-1.4,rz2=T[1]+8.4;addRamp(rx1,rz1,rx2,rz2,'z',top,0);
-    const n=24;for(let i=0;i<n;i++){const k=(i+.5)/n,zz=rz2-k*(rz2-rz1),yy=top*(i+1)/n;B.box(1.5,.12,(rz2-rz1)/n+.02,(rx1+rx2)/2,yy-.06,zz,0x5e4229)}B.build();
-    lootSpot('crate',T[0]+.6,top,T[1]+.6);lantern(T[0]+1.3,top+1.6,T[1]-1.3,false)}
-  /* ---- campground (south): spawn ---- */
-  const G=[0,34];
-  {const B=new Batch();
-    const tent=(x,z,ry,col)=>{const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=ry;scene.add(g);for(const sd of [-1,1]){const p=mk(box(1.9,.06,2.6),mat(col),sd*.62,.85,0,g);p.rotation.z=-sd*.95}setShadow(g);addSolid(x-1.3,z-1.4,x+1.3,z+1.4,0,1.5)};
-    tent(G[0]-6,G[1]-3,.3,0x4a5a3a);tent(G[0]+6,G[1]-4,-.4,0x6a3a2a);tent(G[0]-5,G[1]+5,.1,0x3a4a5a);
-    /* RV */B.box(7,2.6,2.6,G[0]+8,1.6,G[1]+5,0xb8b0a0);B.box(7.04,.5,2.64,G[0]+8,.6,G[1]+5,0x6a3a2a);B.box(6.4,.6,.04,G[0]+8,2.1,G[1]+3.68,0x1a1e22);[-2.4,2.4].forEach(o=>{B.box(.6,.6,2.7,G[0]+8+o,.3,G[1]+5,0x141414)});addSolid(G[0]+4.5,G[1]+3.7,G[0]+11.5,G[1]+6.3,0,2.9);
-    /* picnic tables (vault them) */[[-1.5,-6],[2.5,-7.5]].forEach(([a,b])=>{B.box(2,.08,.9,G[0]+a,.75,G[1]+b,0x6b4a30);B.box(2,.06,.3,G[0]+a,.45,G[1]+b-.65,0x5e4229);B.box(2,.06,.3,G[0]+a,.45,G[1]+b+.65,0x5e4229);addSolid(G[0]+a-1,G[1]+b-.8,G[0]+a+1,G[1]+b+.8,0,.78)});
-    /* dead campfire */for(let i=0;i<7;i++){const a=i/7*TAU;B.box(.4,.25,.4,G[0]+Math.cos(a)*.8,.12,G[1]+Math.sin(a)*.8,0x6f716b)}B.box(.9,.1,.1,G[0],.12,G[1],0x1a1410,.4);
-    /* old pickup truck */B.box(2,1,4.4,G[0]-9,.7,G[1]+9,0x5a3a2a,.25);B.box(1.8,.8,1.8,G[0]-9.3,1.5,G[1]+8,0x4a2e22,.25);addSolid(G[0]-10.3,G[1]+6.8,G[0]-7.7,G[1]+11.2,0,1.25);
-    B.build()}
-  freeCont('trunk',G[0]-8.4,0,G[1]+11.3,topCont(.95,.5,[0,1],.85));
-  lootSpot('fridge',G[0]+3.5,0,G[1]+5);lootSpot('crate',G[0]-6,0,G[1]-1);lootSpot('shelf',G[0]+8,0,G[1]+2.7);
-  lantern(G[0]+2,2.4,G[1]-1,true);{const B=new Batch();B.box(.12,2.4,.12,G[0]+2,1.2,G[1]-1,0x3a2a1c);B.build()}
-  forestSign(1.8,G[1]-12,0,['CABINS  <','RANGER  >']);forestSign(-2.2,FOREST.creek(0)-5,Math.PI,['CAMPGROUND','v']);
-  forestRoadside();forestFarm();forestLogging();forestChapel();
-  /* ---- the woods: pines (4 tiers, textured), dead snags, autumn birch. All chunked so off-screen trees cost nothing ---- */
+  /* drainage channel: dark water between concrete lips; culverts where roads cross */
+  {const pts=[],idx=[];let k=0;for(let x=-WORLD-20;x<=WORLD+20;x+=2){const z=FOREST.creek(x);pts.push(x,.03,z-FOREST.creekW/2,x,.03,z+FOREST.creekW/2);if(k){const a=(k-1)*2;idx.push(a,a+1,a+2,a+1,a+3,a+2)}k++}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));g.setIndex(idx);g.computeVertexNormals();mk(g,new THREE.MeshPhongMaterial({color:0x161c1c,specular:0x5a6468,shininess:60,transparent:true,opacity:.94})).receiveShadow=true;
+    const B=new Batch();for(let x=-WORLD;x<=WORLD;x+=3){if(forestRoadD(x,FOREST.creek(x))<3.5)continue;const z=FOREST.creek(x);[-1,1].forEach(sd=>B.box(3.1,.35,.4,x,.15,z+sd*(FOREST.creekW/2+.2),0x6a6862,Math.atan(FOREST.creek(x+1)-z)))}
+    for(let i=0;i<70;i++){const x=(rng()*2-1)*WORLD,z=FOREST.creek(x)+(rng()-.5)*FOREST.creekW;B.box(.3+rng()*.6,.12+rng()*.2,.3+rng()*.5,x,.08,z,rng()<.5?0x4e4c46:0x3a3226,rng()*3)}B.build()}
+  /* ---------- 1. highway entrance / outskirts (spawn) ---------- */
+  {const B=new Batch(),hw=FOREST.roads[0].cur;
+    /* guardrails along both shoulders (vault them), broken in places */
+    const L=hw.getLength();for(let d=4;d<L*.42;d+=4){if(rng()<.18)continue;const t=d/L,p=hw.getPointAt(t),tg=hw.getTangentAt(t),nx=-tg.z,nz=tg.x,ry=Math.atan2(tg.x,tg.z);[-1,1].forEach(sd=>{const x=p.x+nx*sd*5.4,z=p.z+nz*sd*5.4;B.box(.08,.32,4,x,.62,z,0x8a8c88,ry+(rng()-.5)*.06);B.box(.12,.75,.12,x,.37,z,0x5a5c58);addSolid(x-.3,z-.3,x+.3,z+.3,0,.8)})}
+    /* south: the bridge is gone. Barricade, then broken deck slabs dropping away */
+    jersey(-138,247,0,3);boardSign(-138,1.4,246.5,0,3,.8,'BRIDGE OUT','#d8c040','#1a1a16');
+    for(let i=0;i<4;i++){const m=mk(box(8.5,.6,4),mat(0x7a7870),-138+(rng()-.5)*2,-.4-i*1.4,252+i*3.6);m.rotation.x=.25+i*.12;m.rotation.z=(rng()-.5)*.3;m.receiveShadow=true}
+    /* checkpoint: barriers across the road with a gap, sandbags, guard booth, tent */
+    {const z=186,x=-135.4;jersey(x-5.5,z,0,2);jersey(x+6,z,0,2);for(let i=0;i<10;i++){B.box(.7,.32,.4,x-12+(i%5)*.72,.16+Math.floor(i/5)*.32,z-2,0x8a7a58,0,.1)}addSolid(x-12.4,z-2.2,x-8.8,z-1.8,0,.64);
+      B.box(1.8,2.3,1.8,x+11,1.15,z+2,0xa8a490,0,.05);B.box(2,.12,2,x+11,2.36,z+2,0x4a4a46);addSolid(x+10.1,z+1.1,x+11.9,z+2.9,0,2.4);
+      {const g=new THREE.Group();g.position.set(x-12,0,z+6);scene.add(g);for(const sd of [-1,1]){const p=mk(box(3.4,.06,4.2),mat(0x4a5038),sd*1.2,1.2,0,g);p.rotation.z=-sd*.8}setShadow(g);addSolid(x-14.6,z+3.9,x-9.4,z+8.1,0,1.7)}
+      lootSpot('mil',x-12,0,z+3.2);boardSign(x+6,1.6,z-.4,0,2.6,.9,'QUARANTINE','#c8c0a8','#7a1a12','CHECKPOINT 4');B.box(.1,1.6,.1,x+6,.8,z-.45,0x4a4a46);
+      B.box(.18,6,.18,x-8,3,z+3,0x4a4a46);B.box(1,.5,.4,x-8,6.1,z+3,0x2a2a28)}
+    B.build();
+    forestSign(-124.6,198,0,['WELCOME TO','ASHFORD']);boardSign(-124.6,2.6,198.2,0,2.2,.5,'POP. 2,140','#3a5a3a','#e0dccb');
+    wreck(-134,231,.15,0x6a6e70);wreck(-142,214,2.95,0x7a3a2a);overturned(-129.5,171,.9,0x4a5a6a);wreck(-139,160,.3,0x8a8270);wreck(-118,141,2.8,0x3a4a3a);wreck(-131,178,-.2,0x5a4a3a);
+    {const B2=new Batch();for(let i=0;i<14;i++){const x=-138+(rng()-.5)*16,z=150+rng()*90;if(forestRoadD(x,z)>2)continue;B2.box(.3+rng()*.5,.06,.2+rng()*.5,x,.06,z,pick([0x2a2622,0x4a4440,0x6a5a3a]),rng()*3)}B2.build()}}
+  /* ---------- 2. gas station + garage ---------- */
+  {const B=new Batch(),cx=-100,cz=126;[[-4.5,-7.5],[4.5,-7.5],[-4.5,7.5],[4.5,7.5]].forEach(([a,b])=>{B.box(.4,4.8,.4,cx+a,2.4,cz+b,0x8a8a84);addSolid(cx+a-.2,cz+b-.2,cx+a+.2,cz+b+.2,0,4.8,{noClimb:1})});
+    B.box(11,.6,17,cx,5.1,cz,0xa8a49a);B.box(11.1,.3,17.1,cx,4.75,cz,0x7a2a22);for(const z of [cz-5,cz,cz+5]){propBox(B,.8,1.5,1.4,cx,0,z,0x9a9890);B.box(.82,.3,1.42,cx,1.65,z,0x7a2a22)}
+    B.box(.3,7,.3,-113,3.5,106,0x5a5a56);B.box(2.6,1.6,.3,-113,7.6,106,0x2a2a28);B.build();addSolid(-113.2,105.8,-112.8,106.2,0,7,{noClimb:1});boardSign(-113,7.6,106.2,0,2.4,1.4,'GAS','#2a2a28','#d8c040','3.89  3.99');
+    shop(-84,140,14,10,'w','GAS & GO','GAS & GO',(B2,b,f,y)=>{shelf(B2,b.x1+5,y,b.z1+3,4,0);shelf(B2,b.x1+5,y,b.z2-3,4,0);propBox(B2,1,1,3,b.x1+1.4,y,(b.z1+b.z2)/2+2.5,0x5a5048);lootSpot('shelf',b.x1+5,y,b.z1+4);lootSpot('shelf',b.x1+8,y,b.z2-4);lootSpot('fridge',b.x2-.8,y,b.z1+1.5);lootSpot('fridge',b.x2-.8,y,b.z1+3.2);lootSpot('desk',b.x1+1.4,y,(b.z1+b.z2)/2-.6)},{col:0x8a8478,sbg:'#7a2a22',sfg:'#e8e0c8'});
+    makeBuilding({x:-84,z:114,w:12,d:12,floors:1,fh:4.2,door:'w',doorW:3.6,col:0x7a786e,trim:0x4a4842,floorC:0x3a3a36,roofC:0x2e2c2a,name:'SERVICE GARAGE',type:'shop',big:true,
+      interior:(B2,b,f,y)=>{propBox(B2,1.9,1.1,4.2,b.x1+4,y+.4,(b.z1+b.z2)/2,0x5a6a72);B2.box(.2,.4,.2,b.x1+3.2,y+.2,b.z1+4,0x2a2a28);B2.box(.2,.4,.2,b.x1+4.8,y+.2,b.z2-4,0x2a2a28);
+        propBox(B2,3,.9,.8,b.x2-2,y,b.z1+.6,0x6a5a48);lootSpot('crate',b.x2-1.2,y,b.z1+1.4);lootSpot('crate',b.x2-1,y,b.z2-1.2);lootSpot('desk',b.x2-3,y,b.z2-1);for(let i=0;i<4;i++){const m=mk(cyl(.36,.36,.25,10),mat(0x1a1a1a),b.x2-.6,y+.36+i*.26,(b.z1+b.z2)/2);m.rotation.x=Math.PI/2}}});
+    boardSign(-90.08,3.4,114,-Math.PI/2,5,.8,"HANK'S AUTO",'#2a3a4a','#d8cfb6');
+    dumpster(-72,141,Math.PI/2);dumpster(-72,137,Math.PI/2);bgBox(-72,124,3.5,5,2.6,0x6a6a62,{name:'STORAGE'});wreck(-96,110,1.4,0x6a3a2a);wreck(-108,146,.2,0x4a5a6a);freeCont('trunk',-96.6,0,108,topCont(.95,.5,[0,1],.85))}
+  /* ---------- 3. motel ---------- */
+  {const B=new Batch(),x0=-142,live=[1,4,7];for(let i=0;i<10;i++){const z=22+i*4.6;if(live.includes(i)){makeBuilding({x:x0,z,w:7,d:4.4,floors:1,fh:3,door:'e',col:0x8a7a62,trim:0x5a4a3a,floorC:0x4a3e34,roofC:0x2e2a26,name:'MOTEL ROOM '+(i+1),type:'house',
+        interior:(B2,b,f,y)=>{furniture(b.x1+1.2,y,(b.z1+b.z2)/2,'bed',Math.PI/2);furniture(b.x2-1.1,y,b.z1+.6,'dresser',0);lootSpot(i===4?'cabinet':'crate',b.x1+.8,y,b.z2-.7)}})}
+      else{B.box(7,3,4.3,x0,1.5,z,0x8a7a62,0,.05);B.box(.06,2.1,1,x0+3.53,1.05,z,0x3a2a22);B.box(.06,1,1.3,x0+3.53,1.7,z+1.2,i%3?0x0e1012:0x5a4632);addSolid(x0-3.5,z-2.15,x0+3.5,z+2.15,0,3.3)}}
+    B.box(7.4,.3,46.6,x0,3.15,40.7,0x3a3430);B.box(2.6,.15,46.6,x0+4.8,2.95,40.7,0x4a423a);for(let i=0;i<=10;i++){const z=19.7+i*4.6;B.box(.14,2.9,.14,x0+6,1.45,z,0x6a6258);addSolid(x0+5.9,z-.1,x0+6.1,z+.1,0,2.9,{noClimb:1})}
+    propBox(B,.9,1.8,.7,-117,0,56,0x7a2a22);propBox(B,.9,1.8,.7,-117,0,54.6,0x2a4a6a);B.box(.18,8,.18,-98,4,62,0x5a5a56);B.box(3.4,1.8,.4,-98,8.6,62,0x2a2420);B.build();addSolid(-98.2,61.8,-97.8,62.2,0,8,{noClimb:1});
+    boardSign(-98,8.6,62.22,0,3.2,1.6,'PINE REST','#2a2420','#c8402a','MOTEL · VACANCY');
+    makeBuilding({x:-112,z:44,w:8,d:7,floors:1,fh:3,door:'w',col:0x8a7a62,trim:0x5a4a3a,floorC:0x4a3e34,roofC:0x2e2a26,name:'MOTEL OFFICE',type:'house',
+      interior:(B2,b,f,y)=>{propBox(B2,.8,1.05,4,b.x1+2.2,y,(b.z1+b.z2)/2,0x5a4a3a);lootSpot('desk',b.x1+3,y,(b.z1+b.z2)/2);lootSpot('cabinet',b.x2-.8,y,b.z1+1);lootSpot('crate',b.x2-.8,y,b.z2-1);shelf(B2,b.x2-.5,y,(b.z1+b.z2)/2,2.4,1)}});
+    gableRoof(-112,44,8,7,4,'x',0x2e2a26);
+    makeBuilding({x:-142,z:70,w:5,d:5,floors:1,fh:2.8,door:'e',col:0x6a6a62,trim:0x4a4842,floorC:0x3a3a36,roofC:0x2e2c2a,name:'MAINTENANCE',type:'shop',interior:(B2,b,f,y)=>{lootSpot('crate',b.x1+.8,y,b.z1+.8);lootSpot('crate',b.x2-.8,y,b.z2-.8);propBox(B2,1.4,1.2,.6,b.x1+1,y,b.z2-.5,0x4a4a46)}});
+    wreck(-126,33,1.6,0x8a8270);wreck(-120,52,1.4,0x3a4a5a);dumpster(-108,60,0)}
+  /* ---------- 4. downtown: Main Street ---------- */
+  {const N=[[-34,16,14,'GROCERY','ASHFORD MARKET','groc'],[-17,9,12,'PHARMACY','RX PHARMACY','pharm'],[-5,8,12,null,'FOR LEASE'],[8,10,12,null,'ASHFORD GAZETTE',2],[24,14,14,'HARDWARE','HANSEN HARDWARE','hard'],[41,10,12,'BAR',"RUSTY'S TAVERN",'bar'],[55,9,12,null,'PAWN']];
+    const Sd=[[-33,13,12,'DINER',"MAE'S DINER",'diner'],[-18,9,12,'LAUNDROMAT','SUDS LAUNDRY','laund'],[-6,8,12,null,'VIDEO'],[8,12,14,null,'FIRST ASHFORD BANK',2],[26,12,14,'SHERIFF','SHERIFF','sher'],[42,10,12,null,'BARBER'],[56,9,12,null,'CLOSED']];
+    const IN={
+      groc:(B,b,f,y)=>{for(let i=0;i<3;i++)shelf(B,b.x1+4+i*3.6,y,(b.z1+b.z2)/2-1,6,1);lootSpot('shelf',b.x1+4,y,b.z1+3);lootSpot('shelf',b.x1+7.6,y,b.z2-4);lootSpot('shelf',b.x1+11.2,y,b.z1+4);lootSpot('fridge',b.x2-.8,y,b.z1+2);lootSpot('fridge',b.x2-.8,y,b.z1+4);propBox(B,2.4,1,.9,b.x2-2.4,y,b.z2-1.6,0x5a5048)},
+      pharm:(B,b,f,y)=>{shelf(B,(b.x1+b.x2)/2,y,(b.z1+b.z2)/2,4,1);propBox(B,6,1,.8,(b.x1+b.x2)/2,y,b.z1+2.2,0x6a6a62);lootSpot('cabinet',b.x1+1,y,b.z1+1);lootSpot('cabinet',b.x2-1,y,b.z1+1);lootSpot('shelf',(b.x1+b.x2)/2+1,y,(b.z1+b.z2)/2+1)},
+      hard:(B,b,f,y)=>{for(let i=0;i<2;i++)shelf(B,b.x1+4+i*5,y,(b.z1+b.z2)/2-1,6,1);lootSpot('crate',b.x1+1,y,b.z1+1);lootSpot('crate',b.x2-1,y,b.z1+1.2);lootSpot('crate',b.x2-1,y,(b.z1+b.z2)/2+1);lootSpot('desk',b.x2-2.5,y,b.z2-1.4);propBox(B,2.6,1,.9,b.x2-2.6,y,b.z2-2.4,0x5a5048)},
+      bar:(B,b,f,y)=>{propBox(B,.8,1.1,7,b.x1+1.6,y,(b.z1+b.z2)/2,0x4a3424);furniture(b.x2-2,y,b.z1+2.5,'table',0);furniture(b.x2-2,y,b.z2-3,'table',0);lootSpot('fridge',b.x1+.6,y,b.z1+1.4);lootSpot('crate',b.x1+.6,y,b.z2-1.4)},
+      diner:(B,b,f,y)=>{propBox(B,7,1.05,.8,(b.x1+b.x2)/2,y,b.z2-2.4,0x8a8478);for(let i=0;i<3;i++)furniture(b.x1+2+i*3.6,y,b.z1+1.8,'table',0);lootSpot('fridge',b.x1+1,y,b.z2-.8);lootSpot('fridge',b.x2-1,y,b.z2-.8);lootSpot('cabinet',(b.x1+b.x2)/2,y,b.z2-.8)},
+      laund:(B,b,f,y)=>{for(let i=0;i<5;i++)propBox(B,.8,1,.8,b.x1+1+i*1.4,y,b.z1+.8,0xb8b4aa);for(let i=0;i<4;i++)propBox(B,.8,1,.8,b.x1+1.6+i*1.5,y,b.z2-2.4,0xb8b4aa);lootSpot('crate',b.x2-1,y,(b.z1+b.z2)/2);lootSpot('shelf',b.x1+1,y,(b.z1+b.z2)/2)},
+      sher:(B,b,f,y)=>{desk(B,b.x1+2.4,y,b.z2-3,0);desk(B,b.x2-2.4,y,b.z2-3,0);lootSpot('mil',b.x1+1,y,b.z1+1);lootSpot('mil',b.x2-1,y,b.z1+1);lootSpot('cabinet',(b.x1+b.x2)/2,y,b.z1+.8);propBox(B,.15,2.6,4,(b.x1+b.x2)/2,y,b.z1+3,0x5a5a5a)}};
+    for(const [x,w,d,nm,sg,k] of N){const z=-6-d/2;if(nm)shop(x,z,w,d,'s',nm,sg,IN[k]);else bgShop(x,z,w,d,'s',sg,k)}
+    for(const [x,w,d,nm,sg,k] of Sd){const z=6+d/2;if(nm)shop(x,z,w,d,'n',nm,sg,IN[k]);else bgShop(x,z,w,d,'n',sg,k)}
+    for(let x=-44;x<=64;x+=16){streetLight(x,-4.6,0,x===-28||x===36);streetLight(x+8,4.6,Math.PI,x===4)}
+    streetSign(-56,-5,'MAIN ST','OAK AVE');streetSign(97.5,-5,'MAIN ST','ELM ST');
+    wreck(-10,-1.8,1.65,0x5a4a3a);wreck(30,2,1.5,0x6a6e70);wreck(50,-2.4,1.4,0x3a4a3a);overturned(14,1,.4,0x7a3a2a);
+    dumpster(-30,-24,0);dumpster(20,-24,0);dumpster(-14,24,0);dumpster(36,24,0);
+    for(let i=0;i<30;i++){const x=-44+rng()*110,z=(rng()<.5?-1:1)*(4.2+rng()*1.6);const B=new Batch();B.box(.25+rng()*.4,.08+rng()*.12,.2+rng()*.4,x,.06,z,pick([0x3a3632,0x5a5248,0x2a2420]),rng()*3);B.build()}}
+  /* ---------- 5. water tower (landmark) ---------- */
+  waterTower(22,-56);
+  /* ---------- 6. residential: Maple, Pine, Birch Ct ---------- */
+  {const H=[ // x, z, door, w, d, floors, enterable
+      [-190,-101,'s',9,8,1,0],[-168,-101,'s',10,8,2,1],[-146,-101,'s',9,8,1,0],[-106,-101,'s',9,8,2,0],[-84,-101,'s',10,8,1,1],[-40,-101,'s',9,8,1,0],[-16,-101,'s',10,8,2,1],[50,-99,'s',9,8,1,0],
+      [-188,-71,'n',9,8,1,0],[-164,-71,'n',10,8,1,1],[-106,-71,'n',9,8,2,0],[-84,-71,'n',9,7,1,0],[-36,-71,'n',10,8,1,1],[56,-67,'n',9,8,1,0],
+      [-185,-165,'s',9,8,1,0],[-160,-165,'s',10,8,1,0],[-108,-165,'s',10,8,2,1],[-86,-165,'s',9,8,1,0],[-40,-161,'s',9,8,1,0],
+      [-182,-135,'n',9,8,1,0],[-158,-135,'n',10,8,1,1],[-106,-135,'n',9,7,1,0],[-84,-135,'n',9,8,1,0],
+      [-142,-120,'e',8,7,1,1],[-115,-118,'w',7,8,1,0]];
+    for(const [x,z,door,w,d,fl,en] of H){if(en)townHouse(x,z,w,d,door,fl,{over:rng()<.4});else bgHouse(x,z,w,d,door,fl);
+      const s=door==='s'?1:door==='n'?-1:0;
+      if(s){/* front yard fence with a gap at the path; shed + car */const fz=z+s*(d/2+4.2);if(rng()<.7){picket(x-10,fz,x-1.4,fz);picket(x+1.4,fz,x+10,fz)}
+        if(rng()<.6)bgBox(x+(rng()<.5?-1:1)*(w/2+3),z-s*(d/2+3),3,3,2.4,0x5a5a52,{gable:1});if(rng()<.55)wreck(x+(rng()<.5?-1:1)*(w/2+2.4),z+s*(d/2+2.2),Math.PI/2+(rng()-.5)*.3,pick([0x5a4a3a,0x6a6e70,0x3a4a3a,0x7a3a2a,0x8a8270]))}}
+    streetSign(-129,-82,'MAPLE DR','BIRCH CT');streetSign(-131,-146,'PINE ST','BIRCH CT');streetSign(-62,-84,'MAPLE DR','OAK AVE');streetSign(-66,-146,'PINE ST','OAK AVE');streetSign(88,-77,'MAPLE DR','ELM ST');
+    /* church at the end of Oak, with its graveyard */
+    cabin.lit=0;cabin(-92,-201,8,13,'e','CHURCH',(B,b,f,y)=>{const cz=(b.z1+b.z2)/2;for(let i=0;i<4;i++)[-1.6,1.6].forEach(o=>propBox(B,.45,.5,1.6,b.x1+2+i*1.4,y,cz+o,0x4a3424));propBox(B,.8,1,1.6,b.x1+.8,y,cz,0x6a5a48);lootSpot('cabinet',b.x1+.7,y,b.z1+1);lootSpot('crate',b.x2-.9,y,b.z2-1)});
+    {const B=new Batch(),x=-94,z=-209;B.box(2,4,2,x,7.5,z,0x5a5a52);const sp=mk(new THREE.ConeGeometry(1.6,4,4),mat(0x2e2c2a),x,11.5,z);sp.rotation.y=Math.PI/4;sp.castShadow=true;B.box(.1,1.4,.1,x,14.2,z,0x2a2826);B.box(.7,.1,.1,x,14.4,z,0x2a2826);
+      for(let r=0;r<3;r++)for(let c=0;c<4;c++){const gx=-106+c*2,gz=-214+r*2.4;B.box(.55,.7+rng()*.3,.14,gx,.4,gz,0x6d6f68,(rng()-.5)*.3,.15);addSolid(gx-.3,gz-.1,gx+.3,gz+.1,0,.9)}B.build()}}
+  /* ---------- 7. clinic on Elm St ---------- */
+  {const x=118,z=-48,w=20,d=14;makeBuilding({x,z,w,d,floors:1,fh:3.2,door:'w',doorW:2,col:0xa09c90,trim:0x5a5a56,floorC:0x6a6a64,roofC:0x3a3a38,name:'CLINIC',type:'shop',big:true,
+      interior:(B,b,f,y)=>{const cz=(b.z1+b.z2)/2,wall=(x1,z1,x2,z2)=>{B.box(Math.max(.15,x2-x1),3,Math.max(.15,z2-z1),(x1+x2)/2,y+1.5,(z1+z2)/2,0x8a8880);addSolid(Math.min(x1,x2)-.08,Math.min(z1,z2)-.08,Math.max(x1,x2)+.08,Math.max(z1,z2)+.08,y,y+3)};
+        /* hallway down the middle; rooms both sides with door gaps */
+        for(const sz of [-1,1]){const wz=cz+sz*1.4;let xa=b.x1+4;for(const xb of [b.x1+8,b.x1+13,b.x2]){wall(xa+1.2,wz,xb,wz);xa=xb}wall(b.x1+4,wz,b.x1+4.1,wz);
+          for(const xc of [b.x1+8,b.x1+13])wall(xc,wz,xc,sz<0?b.z1:b.z2)}
+        propBox(B,.8,1.05,3,b.x1+2,y,cz-3.6,0x6a6a62);lootSpot('desk',b.x1+2.8,y,cz-3.6);
+        furniture(b.x1+6,y,b.z1+1.4,'bed',0);lootSpot('cabinet',b.x1+7.2,y,b.z1+.7);
+        furniture(b.x1+10.5,y,b.z1+1.4,'bed',0);lootSpot('cabinet',b.x1+12.2,y,b.z1+.7);
+        shelf(B,b.x2-3.5,y,b.z1+.7,3,0);lootSpot('cabinet',b.x2-.8,y,b.z1+2);lootSpot('cabinet',b.x2-1.6,y,b.z1+.8);lootSpot('shelf',b.x2-3.5,y,b.z1+1.8);
+        furniture(b.x1+6,y,b.z2-1.6,'table',0);lootSpot('fridge',b.x1+4.8,y,b.z2-.7);lootSpot('crate',b.x1+10,y,b.z2-.8);lootSpot('desk',b.x1+11.6,y,b.z2-1.6);lootSpot('crate',b.x2-1,y,b.z2-1);propBox(B,1.2,1.6,.8,b.x2-3,y,b.z2-.6,0x4a4e50)}});
+    boardSign(x-w/2-.08,2.6,z,-Math.PI/2,7,.9,'ASHFORD CLINIC','#d8d4c8','#8a1a12');
+    {const B=new Batch();B.box(2.2,2.4,5.6,103,1.4,-58,0xd8d4c8,.2,.05);B.box(2.24,.3,5.64,103,1.3,-58,0x8a1a12,.2);B.box(2.1,.6,1.6,103.4,2.9,-60.2,0x1a1e22,.2);B.build();addSolid(101.4,-61.2,104.6,-54.8,0,2.6);MAPD.cars.push([103,-58,2.4,5.8])}}
+  /* ---------- 8. industrial yard ---------- */
+  {makeBuilding({x:185,z:152,w:28,d:18,floors:1,fh:6,door:'n',doorW:5,col:0x6a6e6e,trim:0x4a4e4e,floorC:0x3e3e3a,roofC:0x3a3c3c,name:'WAREHOUSE',type:'shop',big:false,
+      interior:(B,b,f,y)=>{for(let i=0;i<4;i++)shelf(B,b.x1+5+i*5.5,y,(b.z1+b.z2)/2+2,10,1);lootSpot('crate',b.x1+5,y,b.z1+2);lootSpot('crate',b.x1+16,y,(b.z1+b.z2)/2+2);lootSpot('crate',b.x2-1.4,y,b.z2-1.4);lootSpot('mil',b.x1+1.4,y,b.z2-1.4);lootSpot('desk',b.x2-2,y,b.z1+2);
+        propBox(B,1.4,2,2.6,b.x2-4,y,b.z1+3,0xc8a020);for(let i=0;i<6;i++)propBox(B,1.2,1.2,1.2,b.x1+1.2+(i%3)*1.4,y,b.z1+1.4+Math.floor(i/3)*1.4,0x7a6a4a)}});
+    boardSign(185,5,142.9,Math.PI,8,1,'ASHFORD SUPPLY CO.','#3a3c3c','#d8cfb6');
+    makeBuilding({x:130,z:138,w:12,d:8,floors:1,fh:3.2,door:'n',doorW:2.4,col:0x7a786e,trim:0x4a4842,floorC:0x3a3a36,roofC:0x2e2c2a,name:'MAINTENANCE DEPOT',type:'shop',
+      interior:(B,b,f,y)=>{propBox(B,3,.9,.8,b.x1+2,y,b.z2-.6,0x6a5a48);lootSpot('crate',b.x1+.9,y,b.z1+1.2);lootSpot('crate',b.x2-.9,y,b.z2-1);lootSpot('desk',b.x2-2.4,y,b.z1+1);propBox(B,1.2,1.2,1.2,b.x2-1.2,y,b.z1+3.2,0x5a5a52)}});
+    /* substation behind a high fence */
+    {const x1=118,z1=168,x2=142,z2=186;chain(x1,z1,x2,z1,2.4,[10,14]);chain(x1,z2,x2,z2,2.4);chain(x1,z1,x1,z2,2.4);chain(x2,z1,x2,z2,2.4);
+      const B=new Batch();for(let i=0;i<3;i++){propBox(B,2.2,2.6,2.2,x1+5+i*7,0,z1+8,0x5a6a5a);B.box(.2,1,.2,x1+5+i*7,3.1,z1+8,0x9a9a8a)}for(let i=0;i<4;i++)B.box(.25,6,.25,x1+3+i*6,3,z2-3,0x5a5a56);B.build();boardSign(130,1.6,167.9,Math.PI,2.4,.9,'DANGER','#d8c040','#1a1a16','HIGH VOLTAGE')}
+    /* junkyard: stacked wrecks, scrap */
+    {const B=new Batch();chain(176,186,214,186,2,[16,21]);chain(176,186,176,216,2);chain(214,186,214,216,2);
+      for(let i=0;i<8;i++){const x=181+(i%4)*8,z=193+Math.floor(i/4)*12;wreck(x,z,(rng()-.5)*.6+Math.PI/2,pick([0x5a4a3a,0x6a6e70,0x7a3a2a,0x4a4a4a]));if(rng()<.6){B.box(1.9,1.1,4.2,x,2.2,z,pick([0x4a3a2a,0x5a5e60,0x6a2a1a]),Math.PI/2+(rng()-.5)*.4,.15);addSolid(x-2.1,z-1,x+2.1,z+1,0,2.8)}}B.build()}
+    container(218,96,0,0x6a2a1e);container(218,103,0,0x2a4a5a);container(218,110,0,0x4a5a3a);container(218,96,0,0x5a5a5a,2.6);container(208,134,Math.PI/2,0x6a4a2a);
+    for(let z=72;z<=176;z+=6.4)container(236,z,0,pick([0x6a2a1e,0x2a4a5a,0x4a5a3a,0x5a5a5a]));
+    radioTower(226,190);dumpster(160,136,0);dumpster(201,140,0);wreck(150,124,.4,0x6a6e70);
+    {const B=new Batch();propBox(B,2.4,1.6,1.2,170,0,135,0x3a5a3a);B.box(.12,.9,.12,170.8,2.1,135,0x2a2a28);B.build()}}
+  /* ---------- 9. boundaries: landslide (N), blocked bridge (E), deep woods (W) ---------- */
+  {const rk=(x,z,r,h)=>{const m=mk(new THREE.DodecahedronGeometry(1,0),rockMs[Math.floor(rng()*3)],x,h*.4,z);m.scale.set(r,h*.6,r*.9);m.rotation.y=rng()*TAU;m.castShadow=m.receiveShadow=true;addSolid(x-r*.8,z-r*.75,x+r*.8,z+r*.75,0,h)};
+    for(let i=0;i<22;i++)rk(-74+(rng()-.5)*22,-236-rng()*12,1.6+rng()*2.2,2.4+rng()*2.4);forestSign(-70,-224,0,['ROAD CLOSED','ROCKSLIDE']);
+    jersey(236,11.4,Math.PI/2,3);boardSign(235.6,1.4,11.4,-Math.PI/2,3,.8,'BRIDGE CLOSED','#d8c040','#1a1a16');
+    {const B=new Batch();B.box(2.5,3,12,243,1.5,6,0xa8a49a,.3,.05);B.box(2.5,2.4,2.6,243.4,1.2,-1.6,0x8a2a1e,.3);B.build();addSolid(240,-2,246,13,0,3)}}
+  /* street power lines + town edge */
+  poles(FOREST.roads[0].cur,6,8,26);poles(FOREST.roads[1].cur,-6.5,12,30);poles(FOREST.roads[4].cur,5.6,10,30);poles(FOREST.roads[3].cur,5.8,10,30);poles(FOREST.roads[7].cur,6,6,28);
+  /* ---------- trees: street trees, yard trees, wooded pockets, the wall of woods round the edge ---------- */
   const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),sv=new THREE.Vector3(),pv=new THREE.Vector3(),cc=new THREE.Color();let n=0;const TS=FOREST.trees=[];
-  const pM=new THREE.MeshLambertMaterial({color:0xffffff,map:FTX.pine,vertexColors:true}),
-    PV=[chunked(pineGeo([[.22,.38,2.1],[.41,.33,1.65],[.6,.28,1.2],[.79,.23,.75]]),pM,true,true),chunked(pineGeo([[.2,.4,2.3],[.42,.34,1.7],[.64,.3,1.05]]),pM,true,true),chunked(pineGeo([[.25,.3,1.7],[.4,.28,1.45],[.55,.26,1.15],[.7,.22,.85],[.84,.18,.5]]),pM,true,true)];
-  const plant=(x,z,s)=>{const h=(5.5+rng()*4.5)*s,dk=forestDark(x,z),v=rng(),w=s*(.85+rng()*.3);e.set((rng()-.5)*.07,rng()*TAU,(rng()-.5)*.07);q.setFromEuler(e);pv.set(x,0,z);sv.set(w,h,w);m4.compose(pv,q,sv);
-    const k=(.8+rng()*.4)*(1-.32*dk);cc.setRGB(k*(1+(rng()-.5)*.14),k*(1+(rng()-.5)*.1),k*(1+(rng()-.5)*.14));PV[v<.55?0:v<.8?1:2].add(m4,cc);
-    addSolid(x-.24*s,z-.24*s,x+.24*s,z+.24*s,0,4,{noClimb:1});TS.push([x,z,s]);n++};
-  for(let k=0;k<40000&&n<1450;k++){const edge=n<260,x=edge?(rng()<.5?-1:1)*(WORLD-1-rng()*9):(rng()*2-1)*(WORLD-2),z=edge?(rng()*2-1)*(WORLD-1):(rng()*2-1)*(WORLD-2);
-    const xx=edge&&rng()<.5?z:x,zz=edge&&rng()<.5?x:z;if(!edge&&forestDark(xx,zz)<.2&&rng()<.3)continue;if(forestOpen(xx,zz,.6)||bldAt(xx,zz)||blockedAt(xx,zz,1.1))continue;plant(xx,zz,.75+rng()*.6)}
-  /* dark woods: packed tight, you can't see far */
-  for(let k=0,m=0;k<12000&&m<380;k++){const D=FOREST.dark[k%FOREST.dark.length],a=rng()*TAU,r=Math.sqrt(rng())*D[2],x=D[0]+Math.cos(a)*r,z=D[1]+Math.sin(a)*r;if(Math.abs(x)>WORLD-2||Math.abs(z)>WORLD-2||forestOpen(x,z,.4)||bldAt(x,z)||blockedAt(x,z,.8))continue;plant(x,z,.8+rng()*.6);m++}
-  /* dead snags */
-  {const st=chunked(new THREE.CylinderGeometry(.07,.2,1,5).translate(0,.5,0),new THREE.MeshLambertMaterial({color:0x6a625a,map:FTX.bark}),true,false),br=chunked(new THREE.BoxGeometry(.07,1,.07).translate(0,.5,0),new THREE.MeshLambertMaterial({color:0x4e4842}),true,false);
-    for(let k=0,m=0;k<6000&&m<120;k++){const D=FOREST.dark[k%FOREST.dark.length],ins=rng()<.55,x=ins?D[0]+(rng()-.5)*D[2]*1.6:(rng()*2-1)*(WORLD-4),z=ins?D[1]+(rng()-.5)*D[2]*1.6:(rng()*2-1)*(WORLD-4);if(Math.abs(x)>WORLD-2||Math.abs(z)>WORLD-2||forestOpen(x,z,.3)||bldAt(x,z)||blockedAt(x,z,.9))continue;
-      const h=5+rng()*5,s=.8+rng()*.5;e.set((rng()-.5)*.12,rng()*TAU,(rng()-.5)*.12);q.setFromEuler(e);pv.set(x,0,z);sv.set(s,h,s);m4.compose(pv,q,sv);st.add(m4);
-      const nb=2+Math.floor(rng()*3);for(let j=0;j<nb;j++){e.set(.8+rng()*.5,rng()*TAU,0,'YXZ');q.setFromEuler(e);pv.set(x,h*(.45+rng()*.4),z);sv.set(1,.8+rng()*1.4,1);m4.compose(pv,q,sv);br.add(m4)}e.order='XYZ';
-      addSolid(x-.18,z-.18,x+.18,z+.18,0,4,{noClimb:1});m++}
-    st.build();br.build()}
-  /* birch / aspen in autumn colours: meadow edges and along the creek */
-  {const bt=chunked(new THREE.CylinderGeometry(.07,.11,1,6).translate(0,.5,0),new THREE.MeshLambertMaterial({color:0xffffff,map:FTX.birch}),true,false),cn=chunked(new THREE.IcosahedronGeometry(1,0),new THREE.MeshLambertMaterial({color:0xffffff,flatShading:true}),true,true),M=FOREST.meadow;
-    for(let k=0,m=0;k<6000&&m<150;k++){let x,z;if(rng()<.6){const a=rng()*TAU,r=M[2]+1.5+rng()*10;x=M[0]+Math.cos(a)*r;z=M[1]+Math.sin(a)*r}else{x=(rng()*2-1)*(WORLD-4);z=FOREST.creek(x)+(rng()<.5?-1:1)*(3+rng()*6)}
-      if(Math.abs(x)>WORLD-2||Math.abs(z)>WORLD-2||forestOpen(x,z,.2)||bldAt(x,z)||blockedAt(x,z,1))continue;const h=6+rng()*3.5,s=.8+rng()*.4;e.set((rng()-.5)*.1,rng()*TAU,(rng()-.5)*.1);q.setFromEuler(e);pv.set(x,0,z);sv.set(s,h,s);m4.compose(pv,q,sv);bt.add(m4);
-      const hu=rng(),col=hu<.5?[.13,.55,.36]:hu<.8?[.07,.55,.3]:[.2,.4,.28];[[.72,1.6,2.1],[.93,1.05,1.3]].forEach(([y,r,hh])=>{e.set(rng(),rng()*TAU,rng());q.setFromEuler(e);pv.set(x+(rng()-.5)*.4,h*y,z+(rng()-.5)*.4);sv.set(r*s,hh*s,r*s);m4.compose(pv,q,sv);cc.setHSL(col[0]+(rng()-.5)*.03,col[1],col[2]+(rng()-.5)*.06);cn.add(m4,cc)});
-      addSolid(x-.14,z-.14,x+.14,z+.14,0,4,{noClimb:1});m++}
-    bt.build();cn.build()}
-  PV.forEach(p=>p.build());
+  const oM=new THREE.MeshLambertMaterial({color:0xffffff,vertexColors:true,flatShading:true}),OV=[chunked(oakGeo(9,0),oM,true,true),chunked(oakGeo(8,.12),oM,true,true),chunked(oakGeo(10,-.08),oM,true,true)];
+  const pM=new THREE.MeshLambertMaterial({color:0xffffff,map:FTX.pine,vertexColors:true}),PV=[chunked(pineGeo([[.22,.38,2.1],[.41,.33,1.65],[.6,.28,1.2],[.79,.23,.75]]),pM,true,true),chunked(pineGeo([[.2,.4,2.3],[.42,.34,1.7],[.64,.3,1.05]]),pM,true,true)];
+  const free=(x,z,pad)=>!(Math.abs(x)>WORLD-1.5||Math.abs(z)>WORLD-1.5||bldAt(x,z)||blockedAt(x,z,pad)||onLot(x,z,.6)||forestRoadD(x,z)<3.6||forestTrailD(x,z)<1.8||Math.abs(z-FOREST.creek(x))<FOREST.creekW/2+.6);
+  const plant=(x,z,s,kind)=>{const dk=forestDark(x,z),pine=kind==='pine'||(kind!=='oak'&&rng()<.22+.3*dk);const h=(pine?6+rng()*5:5.5+rng()*4.5)*s,w=(pine?.85:1)*s*(.9+rng()*.3)*(pine?1:h*.95);
+    e.set((rng()-.5)*.08,rng()*TAU,(rng()-.5)*.08);q.setFromEuler(e);pv.set(x,0,z);sv.set(pine?w:w,h,pine?w:w);m4.compose(pv,q,sv);
+    const k=(.75+rng()*.4)*(1-.3*dk),au=!pine&&rng()<.18;cc.setRGB(k*(au?1.35:1)*(1+(rng()-.5)*.14),k*(au?1.05:1)*(1+(rng()-.5)*.1),k*(au?.7:1)*(1+(rng()-.5)*.14));
+    (pine?PV[rng()<.6?0:1]:OV[Math.floor(rng()*3)]).add(m4,cc);addSolid(x-.24*s,z-.24*s,x+.24*s,z+.24*s,0,4,{noClimb:1});TS.push([x,z,s]);n++};
+  /* street trees, some growing through the sidewalk, some missing */
+  for(const r of FOREST.roads){if(['hwy','ind','yard','motel'].includes(r.n))continue;const cur=r.cur,L=cur.getLength();for(let d=6;d<L;d+=11+rng()*6){if(rng()<.3)continue;const t=d/L,p=cur.getPointAt(t),tg=cur.getTangentAt(t),nx=-tg.z,nz=tg.x;
+    for(const sd of [-1,1]){const o=r.w/2+3.4+rng()*.8,x=p.x+nx*sd*o,z=p.z+nz*sd*o;if(rng()<.35||Math.hypot(x-5,z)<46)continue;if(Math.abs(x)>WORLD-2||Math.abs(z)>WORLD-2||bldAt(x,z)||blockedAt(x,z,1)||onLot(x,z,.6))continue;plant(x,z,.9+rng()*.35,'oak')}}}
+  /* everywhere else that's open ground: yards, vacant lots, the woods; thick in the dark pockets */
+  for(let k=0;k<60000&&n<1100;k++){const x=(rng()*2-1)*(WORLD-2),z=(rng()*2-1)*(WORLD-2),dk=forestDark(x,z);if(dk<.15&&rng()<.62)continue;if(!free(x,z,1.2))continue;if(Math.hypot(x-5,z)<44)continue;plant(x,z,.8+rng()*.6)}
+  for(let k=0,m=0;k<20000&&m<360;k++){const D=FOREST.dark[k%FOREST.dark.length],a=rng()*TAU,r=Math.sqrt(rng())*D[2],x=D[0]+Math.cos(a)*r,z=D[1]+Math.sin(a)*r;if(!free(x,z,.9))continue;plant(x,z,.85+rng()*.55);m++}
+  /* edge: the woods close in. Dense trunks you can't walk through */
+  for(let k=0,m=0;k<30000&&m<560;k++){const sd=k%4,t=(rng()*2-1)*(WORLD-1),o=WORLD-1-rng()*12,x=[t,t,-o,o][sd],z=[-o,o,t,t][sd];if(!free(x,z,.7))continue;plant(x,z,.9+rng()*.6,rng()<.5?'pine':'oak');m++}
+  OV.forEach(o=>o.build());PV.forEach(p=>p.build());
   /* outer wall of trees beyond the edge (no collision needed) */
-  {const ot=chunked(new THREE.ConeGeometry(1,1,6).translate(0,.5,0),new THREE.MeshLambertMaterial({color:0x18241a}),false,false);for(let i=0;i<620;i++){const sd=i%4,t=(rng()*2-1)*(WORLD+22),o=WORLD+2+rng()*20,p=[[t,-o],[t,o],[-o,t],[o,t]][sd];pv.set(p[0],0,p[1]);sv.set(2+rng(),8+rng()*6,2+rng());m4.compose(pv,q.identity(),sv);ot.add(m4)}ot.build()}
-  /* stumps + missing posters on trunks near the paths */
-  {const sg=chunked(new THREE.CylinderGeometry(.26,.34,.4,7).translate(0,.2,0),new THREE.MeshLambertMaterial({color:0x8a7462,map:FTX.bark}),true,true);
-    const stump=(x,z,s)=>{e.set(0,rng()*TAU,0);q.setFromEuler(e);pv.set(x,0,z);sv.set(s,.6+rng()*.8,s);m4.compose(pv,q,sv);sg.add(m4)};
-    for(let k=0,m=0;k<3000&&m<170;k++){const x=(rng()*2-1)*(WORLD-3),z=(rng()*2-1)*(WORLD-3);if(forestTrailD(x,z)<1.5||forestRoadD(x,z)<3||Math.abs(z-FOREST.creek(x))<FOREST.creekW||bldAt(x,z)||blockedAt(x,z,.7))continue;stump(x,z,.7+rng()*.6);m++}
-    const L=FOREST.logCamp;for(let i=0;i<26;i++){const a=rng()*TAU,r=6+rng()*12,x=L[0]+Math.cos(a)*r,z=L[1]+Math.sin(a)*r;if(forestRoadD(x,z)<3||bldAt(x,z)||blockedAt(x,z,.8))continue;stump(x,z,.9+rng()*.5)}sg.build();
-    const pm=new THREE.MeshLambertMaterial({map:FTX.poster,side:THREE.DoubleSide}),pg=new THREE.PlaneGeometry(.32,.46);let np=0;
-    for(const [x,z,s] of TS){if(np>=16)break;const d=Math.min(forestTrailD(x,z),forestRoadD(x,z)-1.5);if(d<1.6||d>4.5||rng()<.6)continue;
-      const gx=Math.min(forestTrailD(x+.5,z),forestRoadD(x+.5,z)-1.5)-Math.min(forestTrailD(x-.5,z),forestRoadD(x-.5,z)-1.5),gz=Math.min(forestTrailD(x,z+.5),forestRoadD(x,z+.5)-1.5)-Math.min(forestTrailD(x,z-.5),forestRoadD(x,z-.5)-1.5),gl=Math.hypot(gx,gz)||1,dx=-gx/gl,dz=-gz/gl,o=.19*s+.03;
-      const p=mk(pg,pm,x+dx*o,1.5+rng()*.3,z+dz*o);p.rotation.set(0,Math.atan2(dx,dz),(rng()-.5)*.2);np++}}
-  /* choppable pines near the clearings (wood), rocks, berry bushes, herbs, scrap */
-  for(let i=0;i<22;i++){for(let k=0;k<40;k++){const cl=FOREST.clear[i%3],a=rng()*TAU,r=cl[2]+1+rng()*6,x=cl[0]+Math.cos(a)*r,z=cl[1]+Math.sin(a)*r;if(forestOpen(x,z,-.4)&&forestTrailD(x,z)<3||bldAt(x,z)||blockedAt(x,z,1.4))continue;
+  {const ot=chunked(new THREE.ConeGeometry(1,1,6).translate(0,.5,0),new THREE.MeshLambertMaterial({color:0x161e16}),false,false);for(let i=0;i<900;i++){const sd=i%4,t=(rng()*2-1)*(WORLD+22),o=WORLD+2+rng()*20,p=[[t,-o],[t,o],[-o,t],[o,t]][sd];pv.set(p[0],0,p[1]);sv.set(2+rng(),9+rng()*7,2+rng());m4.compose(pv,q.identity(),sv);ot.add(m4)}ot.build()}
+  /* dead snags */
+  {const st=chunked(new THREE.CylinderGeometry(.07,.2,1,5).translate(0,.5,0),new THREE.MeshLambertMaterial({color:0x5a544c,map:FTX.bark}),true,false),br=chunked(new THREE.BoxGeometry(.07,1,.07).translate(0,.5,0),new THREE.MeshLambertMaterial({color:0x46403a}),true,false);
+    for(let k=0,m=0;k<8000&&m<110;k++){const x=(rng()*2-1)*(WORLD-4),z=(rng()*2-1)*(WORLD-4);if(!free(x,z,.9)||Math.hypot(x-5,z)<44)continue;const h=4+rng()*5,s=.8+rng()*.5;e.set((rng()-.5)*.12,rng()*TAU,(rng()-.5)*.12);q.setFromEuler(e);pv.set(x,0,z);sv.set(s,h,s);m4.compose(pv,q,sv);st.add(m4);
+      const nb=2+Math.floor(rng()*3);for(let j=0;j<nb;j++){e.set(.8+rng()*.5,rng()*TAU,0,'YXZ');q.setFromEuler(e);pv.set(x,h*(.45+rng()*.4),z);sv.set(1,.8+rng()*1.4,1);m4.compose(pv,q,sv);br.add(m4)}e.order='XYZ';addSolid(x-.18,z-.18,x+.18,z+.18,0,4,{noClimb:1});m++}
+    st.build();br.build()}
+  /* choppable trees (wood) at the edges of the woods; rocks, bushes, herbs, scrap; fallen logs */
+  for(let i=0;i<26;i++){for(let k=0;k<60;k++){const D=FOREST.dark[i%FOREST.dark.length],a=rng()*TAU,r=D[2]*(.7+rng()*.5),x=D[0]+Math.cos(a)*r,z=D[1]+Math.sin(a)*r;if(!free(x,z,1.4))continue;
     const s=.85+rng()*.3,pvv=new THREE.Group(),g=new THREE.Group();pvv.position.set(x,0,z);pvv.add(g);g.rotation.y=rng()*TAU;scene.add(pvv);pineMesh(g,s);setShadow(pvv);treeSpots.push([x,z]);
     const stump=mk(stumpG,trunkM,x,.17,z);stump.scale.setScalar(s);stump.visible=false;stump.castShadow=true;const r2=addRes('tree',pvv,x,0,z,1.3+.45*s,addSolid(x-.3*s,z-.3*s,x+.3*s,z+.3*s,0,4,{noClimb:1}),stump);r2.canopy=4*s;break}}
-  const sc=(cnt,fn,pad)=>{for(let i=0;i<cnt;i++)for(let k=0;k<40;k++){const x=(rng()*2-1)*(WORLD-4),z=(rng()*2-1)*(WORLD-4);if(forestRoadD(x,z)<3.2||bldAt(x,z)||blockedAt(x,z,pad)||Math.abs(z-FOREST.creek(x))<FOREST.creekW)continue;fn(x,z);break}};
-  sc(46,makeRock,1.4);sc(44,makeBush,1.2);sc(36,makeHerb,.8);sc(16,makeScrap,1);sc(8,makeCrate,1);
-  /* fallen logs (vault) and boulders (climb) */
-  {const B=new Batch();for(let i=0;i<26;i++)for(let k=0;k<40;k++){const x=(rng()*2-1)*(WORLD-6),z=(rng()*2-1)*(WORLD-6),ry=rng()*Math.PI,L=3.5+rng()*2.5;if(bldAt(x,z)||blockedAt(x,z,L/2+.5)||forestRoadD(x,z)<L/2+3||Math.abs(z-FOREST.creek(x))<FOREST.creekW+1)continue;
-      const lg=mk(cyl(.36,.4,L,7),mat(0x4a3628),x,.36,z);lg.rotation.set(0,ry,Math.PI/2);lg.castShadow=true;const cx=Math.cos(ry)*L/2,cz=-Math.sin(ry)*L/2;
-      for(let t=-.5;t<=.5;t+=.25)addSolid(x+cx*t*2-.4,z+cz*t*2-.4,x+cx*t*2+.4,z+cz*t*2+.4,0,.72);break}
-    for(let i=0;i<20;i++)for(let k=0;k<40;k++){const x=(rng()*2-1)*(WORLD-6),z=(rng()*2-1)*(WORLD-6),h=1.3+rng()*.6,r=1.1+rng()*.5;if(bldAt(x,z)||blockedAt(x,z,r+.6)||forestTrailD(x,z)<2.5||forestRoadD(x,z)<r+3)continue;
-      const m=mk(new THREE.DodecahedronGeometry(1,0),rockMs[i%3],x,h*.45,z);m.scale.set(r,h*.6,r*.9);m.rotation.y=rng()*TAU;m.castShadow=m.receiveShadow=true;addSolid(x-r*.8,z-r*.75,x+r*.8,z+r*.75,0,h);break}}
-  /* ferns + grass (chunked); tall dry grass in the meadow */
-  {const bg=new THREE.ConeGeometry(.09,.5,3);bg.translate(0,.25,0);const gr=chunked(bg,new THREE.MeshLambertMaterial({color:0xffffff}),false,true),M=FOREST.meadow;let m=0;
-    for(let k=0;k<30000&&m<5600;k++){const cx=(rng()*2-1)*(WORLD+6),cz=(rng()*2-1)*(WORLD+6);if(forestTrailD(cx,cz)<1.8||forestRoadD(cx,cz)<2.6||Math.abs(cz-FOREST.creek(cx))<FOREST.creekW/2+.3||bldAt(cx,cz)||blockedAt(cx,cz,.35))continue;
-      const tuft=3+Math.floor(rng()*4),dk=forestDark(cx,cz);for(let j=0;j<tuft&&m<5600;j++){pv.set(cx+(rng()-.5)*.7,0,cz+(rng()-.5)*.7);e.set((rng()-.5)*.7,rng()*TAU,(rng()-.5)*.7);q.setFromEuler(e);sv.set(1,.6+rng()*1.1,1);m4.compose(pv,q,sv);cc.setHSL(.24+rng()*.06,.32+rng()*.15,(.17+rng()*.09)*(1-.35*dk));gr.add(m4,cc);m++}}
-    for(let k=0,t=0;k<9000&&t<3200;k++){const a=rng()*TAU,r=Math.sqrt(rng())*(M[2]+3),cx=M[0]+Math.cos(a)*r,cz=M[1]+Math.sin(a)*r;if(forestRoadD(cx,cz)<2.6||forestTrailD(cx,cz)<1.4||bldAt(cx,cz)||blockedAt(cx,cz,.3))continue;
-      pv.set(cx,0,cz);e.set((rng()-.5)*.5,rng()*TAU,(rng()-.5)*.5);q.setFromEuler(e);sv.set(1.3,1.6+rng()*1.6,1.3);m4.compose(pv,q,sv);cc.setHSL(.12+rng()*.06,.32+rng()*.12,.28+rng()*.1);gr.add(m4,cc);t++}
+  const sc=(cnt,fn,pad,near)=>{for(let i=0;i<cnt;i++)for(let k=0;k<60;k++){const x=(rng()*2-1)*(WORLD-4),z=(rng()*2-1)*(WORLD-4);if(!free(x,z,pad))continue;fn(x,z);break}};
+  sc(40,makeRock,1.4);sc(70,makeBush,1.2);sc(40,makeHerb,.8);sc(30,makeScrap,1);sc(12,makeCrate,1);
+  {for(let i=0;i<18;i++)for(let k=0;k<60;k++){const x=(rng()*2-1)*(WORLD-6),z=(rng()*2-1)*(WORLD-6),ry=rng()*Math.PI,L=3.5+rng()*2.5;if(!free(x,z,L/2+.5)||forestDark(x,z)<.2)continue;
+      const lg=mk(cyl(.34,.38,L,7),mat(0x3e3228),x,.34,z);lg.rotation.set(0,ry,Math.PI/2);lg.castShadow=true;const cx=Math.cos(ry)*L/2,cz=-Math.sin(ry)*L/2;for(let t=-.5;t<=.5;t+=.25)addSolid(x+cx*t*2-.38,z+cz*t*2-.38,x+cx*t*2+.38,z+cz*t*2+.38,0,.68);break}}
+  /* weeds and tall grass: thick in yards and vacant lots, poking through cracks along the curbs */
+  {const bg=new THREE.ConeGeometry(.09,.5,3);bg.translate(0,.25,0);const gr=chunked(bg,new THREE.MeshLambertMaterial({color:0xffffff}),false,true);let m=0;
+    for(let k=0;k<40000&&m<6200;k++){const cx=(rng()*2-1)*(WORLD+6),cz=(rng()*2-1)*(WORLD+6),rd=forestRoadD(cx,cz),curb=rd>2.4&&rd<3.4;if(!curb&&(rd<3.6||forestTrailD(cx,cz)<1.6||onLot(cx,cz,-.5)||bldAt(cx,cz)||blockedAt(cx,cz,.35)||Math.abs(cz-FOREST.creek(cx))<FOREST.creekW/2+.3))continue;
+      const tuft=curb?2:3+Math.floor(rng()*4),dk=forestDark(cx,cz);for(let j=0;j<tuft&&m<6200;j++){pv.set(cx+(rng()-.5)*.7,0,cz+(rng()-.5)*.7);e.set((rng()-.5)*.7,rng()*TAU,(rng()-.5)*.7);q.setFromEuler(e);sv.set(1,.6+rng()*1.3,1);m4.compose(pv,q,sv);cc.setHSL(.17+rng()*.08,.28+rng()*.12,(.16+rng()*.1)*(1-.35*dk));gr.add(m4,cc);m++}}
     gr.build()}
   /* low ground mist that drifts around you */
   {const mm=new THREE.SpriteMaterial({map:FTX.mist,color:0xc8ccc4,transparent:true,opacity:.14,depthWrite:false});FOREST.mistM=mm;for(let i=0;i<22;i++){const sp=new THREE.Sprite(mm);sp.scale.set(9+rng()*5,2.2+rng(),1);sp.position.set(0,-50,0);sp.userData.v=(rng()-.5)*.4;scene.add(sp);FOREST.mist.push(sp)}}
   FOREST.merged=mergeStatic(c0);
   MAPD.forest=1;
 }
-
 if(FOREST_MAP)buildForest();
 /* TEST: supply yard south of the loot yard. Every item in the game laid out on tables, grab anything (respawns in 25 s) */
 function testSupplyYard(){
@@ -2962,7 +3049,7 @@ function buildWeapon(id){
 }
 const pickups=[];
 const beamM=new THREE.MeshBasicMaterial({color:0xf2c14e,transparent:true,opacity:.16,depthWrite:false});
-(FOREST_MAP?[['crowbar',-39,.1,-21],['axe',-26,0,-19],['bat',-27,3.1,-31],['revolver',-21,.1,-22.5],['pistol',34.5,.1,-31.5],['shotgun',30,3.1,-26],['sniper',35,3.1,-31],['ar',44,5,-19.5],['smg',12.5,0,37],['katana',60,0,FOREST.creek(60)+4.5]]:TEST_MAP?[['axe',-6,0,12],['crowbar',-3,0,12],['bat',3,0,12],['katana',6,0,12],['pistol',-10,0,16],['revolver',-6,0,16],['shotgun',-2,0,16],['smg',2,0,16],['ar',6,0,16],['sniper',10,0,16]]:[['axe',-47,3.1,-6],['crowbar',-38,.1,-41],['bat',-36.5,6.4,35.5],['katana',40,0,40],['pistol',-44,3.1,-9],['revolver',-35,.1,-43],['shotgun',-34,6.4,37.5],['smg',37,0,42],['ar',43,0,37],['sniper',36,0,35]]).forEach(([id,x,y,z])=>{
+(FOREST_MAP?[['crowbar',-86,.1,112],['axe',22,.1,-9],['bat',-86,.1,-99],['revolver',-110,.1,46],['pistol',24,.1,10],['shotgun',-86,.1,141],['sniper',192,.1,146],['ar',-144,0,189.5],['smg',122,.1,-48],['katana',43,.1,-10]]:TEST_MAP?[['axe',-6,0,12],['crowbar',-3,0,12],['bat',3,0,12],['katana',6,0,12],['pistol',-10,0,16],['revolver',-6,0,16],['shotgun',-2,0,16],['smg',2,0,16],['ar',6,0,16],['sniper',10,0,16]]:[['axe',-47,3.1,-6],['crowbar',-38,.1,-41],['bat',-36.5,6.4,35.5],['katana',40,0,40],['pistol',-44,3.1,-9],['revolver',-35,.1,-43],['shotgun',-34,6.4,37.5],['smg',37,0,42],['ar',43,0,37],['sniper',36,0,35]]).forEach(([id,x,y,z])=>{
   const g=new THREE.Group();g.position.set(x,y,z);scene.add(g);
   const m=weaponModel(id);m.position.y=1.3;m.rotation.z=.5;g.add(m);setShadow(m);
   const beam=mk(new THREE.CylinderGeometry(.3,.3,y>1?2.6:7,8,1,true),beamM,0,y>1?1.3:3.5,0,g);beam.userData.noShadow=true;
@@ -3254,7 +3341,7 @@ const EAT_ORDER=['meal','food','canned','water'];
 Object.keys(ITEMS).forEach(k=>{if(!RES['it_'+k])RES['it_'+k]={item:k,amt:{ammo:10,scrap:2,herbs:2,nails:10,cloth:3,plank:2,wood:3,stone:2,gunpowder:5,wire:2}[k]||1,uses:1,respawn:200,label:'Pick up',anim:'grab'}});
 if(TEST_MAP)testSupplyYard();
 const SEARCHT={crate:1.2,mil:1.8,shelf:1.4,desk:1.3,cabinet:1.5,fridge:1.0};   /* hold X this long to search */
-const SPAWN=FOREST_MAP?{x:0,z:39}:{x:0,z:7};
+const SPAWN=FOREST_MAP?{x:-138,z:222}:{x:0,z:7};
 let S,P;
 function freshState(){
   S={pack:'l',known:{},wup:{},running:false,paused:false,over:false,day:1,t:.03,hp:100,hunger:100,inv:{wood:0,stone:0,scrap:0,food:3,herbs:0,bandage:1,medkit:0,pills:0,ammo:8},
@@ -3351,10 +3438,10 @@ function showOv(id,on){$(id).hidden=!on}
 const gameUI=['hud'];
 function setGameUI(on){gameUI.forEach(id=>$(id).style.visibility=on?'visible':'hidden')}
 function refreshMenu(){
-  $('bMapSw').textContent=TEST_MAP?'MAP: TEST AREA':'MAP: FOREST';
+  $('bMapSw').textContent=TEST_MAP?'MAP: TEST AREA':'MAP: TOWN';
   const sv=sGet(SAVE)||sGet(OLDSAVE);
   $('bCont').hidden=!sv;
-  $('svMap').textContent=TEST_MAP?'TEST AREA - MOVEMENT':'FOREST - CABINS';
+  $('svMap').textContent=TEST_MAP?'TEST AREA - MOVEMENT':'ASHFORD - TOWN';
   if(sv){const d=sv.at?new Date(sv.at):null,z=n=>String(n).padStart(2,'0');$('svWhen').textContent=d?z(d.getMonth()+1)+'/'+z(d.getDate())+'/'+d.getFullYear()+'  '+z(d.getHours())+':'+z(d.getMinutes()):'SAVED';$('svDay').textContent='DAY '+sv.day+(sv.kills!=null?'  ·  KILLS '+sv.kills:'')}
   else{$('svWhen').textContent='NO SAVE FILE';$('svDay').textContent='START A NEW GAME'}
   const best=sGet(BEST);$('bestL').textContent=best?'BEST · DAY '+best:'';
@@ -4298,7 +4385,7 @@ function mapStatic(x,sz){
   if(FOREST_MAP){x.fillStyle='#38422a';FOREST.clear.forEach(([a,b,r])=>{x.beginPath();x.arc(mx(a),mx(b),ms(r),0,TAU);x.fill()});x.fillStyle='#121a10';FOREST.dark.forEach(([a,b,r])=>{x.beginPath();x.arc(mx(a),mx(b),ms(r*.8),0,TAU);x.fill()});
     x.lineCap='round';x.strokeStyle='#2c4a5c';x.lineWidth=ms(3.6);x.beginPath();for(let X=-WORLD;X<=WORLD;X+=3)x.lineTo(mx(X),mx(FOREST.creek(X)));x.stroke();
     x.strokeStyle='#6a5a40';x.lineWidth=ms(1.6);x.beginPath();FOREST.tSeg.forEach(q=>{x.moveTo(mx(q[0]),mx(q[1]));x.lineTo(mx(q[2]),mx(q[3]))});x.stroke();
-    x.strokeStyle='#9a8660';x.lineWidth=ms(4.4);x.beginPath();FOREST.rSeg.forEach(q=>{x.moveTo(mx(q[0]),mx(q[1]));x.lineTo(mx(q[2]),mx(q[3]))});x.stroke()}
+    x.fillStyle='#3a3a36';FOREST.lots.forEach(L=>x.fillRect(mx(L[0]),mx(L[1]),ms(L[2]-L[0]),ms(L[3]-L[1])));x.strokeStyle='#8a8478';x.lineWidth=ms(6.5);x.beginPath();FOREST.rSeg.forEach(q=>{x.moveTo(mx(q[0]),mx(q[1]));x.lineTo(mx(q[2]),mx(q[3]))});x.stroke()}
   MAPD.blocks.forEach(([bx,bz,park])=>{x.fillStyle=park?'#8c7650':'#6a5c46';x.fillRect(mx(bx-16),mx(bz-16),ms(32),ms(32))});
   x.fillStyle='#3e3a34';STREETS.forEach(s=>{x.fillRect(0,mx(s-4),sz,ms(8));x.fillRect(mx(s-4),0,ms(8),sz)});
   if(TEST_MAP){x.fillStyle='#8f8676';solids.forEach(b=>{if(b.y2-b.y1<.3&&b.y2<.3)return;x.fillRect(mx(b.x1),mx(b.z1),Math.max(1,ms(b.x2-b.x1)),Math.max(1,ms(b.z2-b.z1)))})}
@@ -4351,7 +4438,7 @@ function drawMap(){
   if(FOREST_MAP){x.fillStyle='#253221';x.fillRect(0,0,sz,sz);x.fillStyle='#4a5434';FOREST.clear.forEach(([a,b,r])=>{x.beginPath();x.arc(mx(a),mx(b),ms(r),0,TAU);x.fill()});x.fillStyle='#1a2418';FOREST.dark.forEach(([a,b,r])=>{x.beginPath();x.arc(mx(a),mx(b),ms(r*.8),0,TAU);x.fill()});
     x.lineCap='round';x.strokeStyle='#2c4a5c';x.lineWidth=Math.max(2,ms(3.6));x.beginPath();for(let X=-WORLD;X<=WORLD;X+=3)x.lineTo(mx(X),mx(FOREST.creek(X)));x.stroke();
     x.strokeStyle='#7a6a4c';x.lineWidth=Math.max(1.2,ms(1.6));x.beginPath();FOREST.tSeg.forEach(q=>{x.moveTo(mx(q[0]),mx(q[1]));x.lineTo(mx(q[2]),mx(q[3]))});x.stroke();
-    x.strokeStyle='#a89468';x.lineWidth=Math.max(2.5,ms(4.4));x.beginPath();FOREST.rSeg.forEach(q=>{x.moveTo(mx(q[0]),mx(q[1]));x.lineTo(mx(q[2]),mx(q[3]))});x.stroke()}
+    x.fillStyle='#4a4a44';FOREST.lots.forEach(L=>x.fillRect(mx(L[0]),mx(L[1]),ms(L[2]-L[0]),ms(L[3]-L[1])));x.strokeStyle='#9a9488';x.lineWidth=Math.max(2.5,ms(6.5));x.beginPath();FOREST.rSeg.forEach(q=>{x.moveTo(mx(q[0]),mx(q[1]));x.lineTo(mx(q[2]),mx(q[3]))});x.stroke()}
   MAPD.blocks.forEach(([bx,bz,park])=>{x.fillStyle=park?'#9c8458':'#7a6a52';x.fillRect(mx(bx-16),mx(bz-16),ms(32),ms(32))});
   x.fillStyle='rgba(70,82,40,.9)';treeSpots.forEach(([tx,tz])=>{x.beginPath();x.arc(mx(tx),mx(tz),1.6,0,TAU);x.fill()});
   x.fillStyle='#4a443c';STREETS.forEach(s=>{x.fillRect(0,mx(s-4),sz,ms(8));x.fillRect(mx(s-4),0,ms(8),sz)});
@@ -4369,7 +4456,7 @@ function drawMap(){
   x.save();x.translate(mx(P.x),mx(P.z));x.rotate(-P.face+Math.PI);x.fillStyle='#fff';x.strokeStyle='#141512';x.lineWidth=1.5;
   x.beginPath();x.moveTo(0,-8);x.lineTo(6,6);x.lineTo(0,3);x.lineTo(-6,6);x.closePath();x.fill();x.stroke();x.restore();
   x.fillStyle='rgba(236,230,214,.8)';x.textAlign='left';x.textBaseline='top';x.fillText('N',6,6);
-  if(FOREST_MAP)x.textAlign='center',[['CAMPGROUND',0,30],['CABINS',-30,-11],['LODGE',-30,-35],['RANGER STATION',32,-37],['LOOKOUT',44,-24],['CREEK',-52,FOREST.creek(-52)+4],['MERRICK FARM',-70,-62],['LUMBER CAMP',38,-100],['CHAPEL',-56,76]].forEach(([t,lx,lz])=>x.fillText(t,mx(lx),mx(lz)));
+  if(FOREST_MAP)x.textAlign='center',[['CHECKPOINT',-135,180],['GAS STATION',-96,152],['MOTEL',-128,16],['MAIN STREET',8,-30],['WATER TOWER',22,-70],['CLINIC',120,-62],['MAPLE DR',-120,-80],['PINE ST',-150,-144],['CHURCH',-96,-222],['WAREHOUSE',185,166],['JUNKYARD',195,222],['RADIO TOWER',226,206],['SUBSTATION',130,194],['DRAINAGE',-200,FOREST.creek(-200)+6]].forEach(([t,lx,lz])=>x.fillText(t,mx(lx),mx(lz)));
   if(CITY_MAP)x.textAlign='center',[['MALL',0,-53],['OFFICES',40,-51],['MARKET',-43,-53],['PARK',0,-13],['CHECKPOINT',40,31],['APARTMENTS',-40,25]].forEach(([t,lx,lz])=>x.fillText(t,mx(lx),mx(lz)));
 }
 
@@ -4576,7 +4663,7 @@ $('splash').addEventListener('click',()=>{if($('splash').hidden)return;initAudio
 const TIPS=['Stalkers are harmless in daylight unless you bump them. At night, turn your light off and crouch.','Aim for the Spitter’s glowing chest sac.','Hit the Juggernaut from behind. Its front plates halve your damage.','Crawlers can climb over low walls. Spike traps slow them down.','Hounds won’t come near your campfire.','Upper floors are safer, but infected will find the stairs.','If you die, your gear drops where you fell. It’s marked red on your map.','Vault through broken windows to lose a chase.'];
 function startGame(save){
   stopMusic();OVS.forEach(id=>showOv(id,id==='loading'));$('loadBar').style.width='0';$('loadTip').textContent=pick(TIPS);
-  const steps=[TEST_MAP?'BUILDING THE TEST AREA':FOREST_MAP?'GROWING THE FOREST':'BUILDING THE CITY','PLACING SUPPLIES',ENABLE_INFECTED?'WAKING THE INFECTED':'CHECKING YOUR GEAR','READY'];let i=0;
+  const steps=[TEST_MAP?'BUILDING THE TEST AREA':FOREST_MAP?'WALKING INTO ASHFORD':'BUILDING THE CITY','PLACING SUPPLIES',ENABLE_INFECTED?'WAKING THE INFECTED':'CHECKING YOUR GEAR','READY'];let i=0;
   const next=()=>{$('loadStep').textContent=steps[i];$('loadBar').style.width=((i+1)/steps.length*100)+'%';
     if(i===0){initAudio();resetWorld()}
     if(i===1){if(save){loadGame(save);(save.v===2?(save.structs||[]):[]).forEach(t=>{if(BUILD[t.type])placeStruct(t.type,t.x,t.y||0,t.z,t.rot,t.hp,t.tier)})}else{freshState();sDel(SAVE)}applyWUps();applyPackLook();applyPersist()}
@@ -4634,7 +4721,7 @@ $('bRespawn').onclick=()=>{
   P.x=rx;P.z=rz;P.y=cf?cf.y:0;P.vy=0;P.onGround=true;P.dead=0;P.act=null;P.down=0;P.kx=P.kz=0;
   S.hp=100;S.hunger=100;S.bleed=0;S.infect=0;S.over=false;if(SOLD.X&&SOLD.X.getup){SOLD.X.getup.reset();SOLD.X.getup.play();P.getup=Math.min(2.2,SOLD.X.getup.getClip().duration)}S.crouch=false;$('crK').classList.remove('on');P.runLatch=false;player.g.rotation.set(0,0,0);equip(S.weapons[S.keepW]?S.keepW:'club');
   zombies.slice().forEach(z=>{if(Math.hypot(z.x-P.x,z.z-P.z)<22){removeZombie(z);zombies.splice(zombies.indexOf(z),1)}});
-  showOv('over',false);setGameUI(true);banner(cf?'RESPAWNED AT YOUR BASE':'YOU WAKE UP SOMEWHERE ELSE',FOREST_MAP?'Somewhere in the woods. Your bag is red on the map (D-pad ↑). Get it back within a day.':'Go get your gear back before the infected camp it.');saveGame();
+  showOv('over',false);setGameUI(true);banner(cf?'RESPAWNED AT YOUR BASE':'YOU WAKE UP SOMEWHERE ELSE',FOREST_MAP?'Somewhere in town. Your bag is red on the map (D-pad ↑). Get it back within a day.':'Go get your gear back before the infected camp it.');saveGame();
 };
 
 /* ---------- update ---------- */
