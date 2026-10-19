@@ -83,6 +83,17 @@ with sync_playwright() as pw:
         dp,dy=best;ok(f'{g} hip-fire aim on crosshair (<5 deg)',dp<5 and dy<5,f'pitch off {dp:.1f}, yaw off {dy:.1f}')
         e("window.__btn(6,1)");time.sleep(1.3);dp,dy=diff(x(M));ok(f'{g} ADS aim on crosshair (<3 deg)',dp<3 and dy<3,f'pitch off {dp:.1f}, yaw off {dy:.1f}')
         pg.screenshot(path=SHOTS+f'/ads_{g}.png');e("window.__btn(6,0)");time.sleep(.4)
+    # guns strafe: face stays on the camera while the legs walk sideways; fingers don't twitch
+    FQ="(()=>{const q=SOLD.bn.index_02_r.quaternion,l=SOLD.bn.index_02_l.quaternion,p=window.__fq||[q.clone(),l.clone()];const d=Math.max(2*Math.acos(Math.min(1,Math.abs(q.dot(p[0])))),2*Math.acos(Math.min(1,Math.abs(l.dot(p[1])))))*57.3;window.__fq=[q.clone(),l.clone()];return d})()"
+    FC="(()=>{const c=Math.atan2(AIMCAM.d.x,AIMCAM.d.z);return Math.abs(((P.face-c)*57.3+540)%360-180)})()"
+    tp(0,7,math.pi)
+    for g in ['ar','pistol']:
+        x(f"(equip('{g}'),0)");time.sleep(1.2);e("window.__ax(0,-.6)");time.sleep(1.2)
+        fc=x(FC);lay=x("JSON.stringify([SOLD.RF&&SOLD.RF.wleft?+SOLD.RF.wleft.getEffectiveWeight().toFixed(2):0,SOLD.PS&&SOLD.PS.left?+SOLD.PS.left.getEffectiveWeight().toFixed(2):0])")
+        fj=max(pg.evaluate('n=>new Promise(r=>{const o=[];const f=()=>{o.push(__E(window.__FQS));if(o.length<n)requestAnimationFrame(f);else r(o)};requestAnimationFrame(f)})',20) if e(f"window.__FQS={json.dumps(FQ)}") is None else [0])
+        e("window.__ax(0,0)");time.sleep(.6)
+        ok(f'{g} strafes left facing the camera (<10 deg)',fc<10 and max(json.loads(lay))>.5,f'face off {fc:.1f}, strafe weight {lay}')
+        ok(f'{g} fingers locked while moving (<3 deg/frame)',fj<3,round(fj,2))
     # head follows the camera (melee): turn the camera, the head (then the body) should end up facing where you look
     x("(equip('axe'),0)");time.sleep(1)
     HY="(()=>{const yaw=o=>{const v=new THREE.Vector3(0,0,1).applyQuaternion(o.getWorldQuaternion(new THREE.Quaternion()));return Math.atan2(v.x,v.z)*57.3};const d=yaw(SOLD.b.Head)-Math.atan2(AIMCAM.d.x,AIMCAM.d.z)*57.3;return Math.abs((d+540)%360-180)})()"

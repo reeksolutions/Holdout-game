@@ -1834,8 +1834,15 @@ function mxRifleSetup(m){SOLD.RF=null;if(!RIFLE.on||!MXL.data||SET.mxAnim===fals
   if(hb&&SOLD.b.LeftHand&&nb('middle_01_r')&&nb('middle_01_l')){const pr=wp(hb).lerp(wp(nb('middle_01_r')),.42),pl=wp(SOLD.b.LeftHand).lerp(wp(nb('middle_01_l')),.42),hq=hb.getWorldQuaternion(new THREE.Quaternion()).invert();
     const dw=pl.clone().sub(pr).normalize(),fw=player.sg.getWorldDirection(new THREE.Vector3());fw.y=0;fw.normalize();const c=Math.sqrt(1-dw.y*dw.y),d=new THREE.Vector3(fw.x*c,dw.y,fw.z*c);   /* barrel straight ahead of the body (the clip's bladed stance points the hand line ~20 deg off) */
     SOLD.rg={p:hb.worldToLocal(pr.clone()),d:d.applyQuaternion(hq),u:new THREE.Vector3(0,1,0).applyQuaternion(hq)}}
+  SOLD.rfing=fingerSnap();
   {RF.idle.setEffectiveWeight(1);RF.aim.setEffectiveWeight(0);SOLD.mixer.update(0);SOLD.rhold=['clavicle_r','upperarm_r','lowerarm_r','hand_r'].filter(n=>SOLD.bn[n]).map(n=>[SOLD.bn[n],SOLD.bn[n].quaternion.clone()])}   /* the right arm's ready hold, forced back on during jumps and landings */
   save.forEach(([a,w])=>a.setEffectiveWeight(w));SOLD.mixer.update(0);if(SOLD.rg)SOLD.RF=RF}
+/* B139 fingers locked on the gun: one grip pose per hand (taken from the clip's aim/idle pose), so blending clips can't make them twitch */
+const GUNMOVE={turn:12};
+function fingerSnap(){const out=[];for(const n in SOLD.bn)if(/^(thumb|index|middle|ring|pinky)_0[123]_[lr]$/.test(n))out.push([SOLD.bn[n],SOLD.bn[n].quaternion.clone()]);return out}
+function gunFingers(){const wv=W[S.weapon];if(!wv||!wv.ranged||!SOLD.bn||!weaponMesh||weaponMesh.parent!==SOLD.b.RightHand)return;const L=wv.pist?(pistolClip()&&SOLD.pfing):(rifleClip()&&SOLD.rfing);if(!L)return;
+  const w=Math.min(1,(wv.pist?SOLD.pmw:SOLD.rmw)||0);for(const [o,q] of L)o.quaternion.slerp(q,w)}
+const gunStrafe=()=>{const w=W[S.weapon];return !!(w&&w.ranged&&(w.pist?pistolClip():rifleClip()))};
 const rifleClip=()=>!!(SOLD.RF&&SOLD.rmw>.5);
 function rifleFore(wv){const q=wv.g2||[0,-.33,.02];let hy=Math.max(q[1],-.43),hz=q[2];const hg=handguardAt(wv,hy);if(hg){hy=hg.y;hz=hg.z}else hz-=.065;return new THREE.Vector3(q[0],hy,hz)}
 function rifleAttach(){const wm=weaponMesh,hb=SOLD.b&&SOLD.b.RightHand,wv=W[S.weapon];if(!wm||!hb||!SOLD.rg||wm.parent===hb)return;
@@ -1872,6 +1879,7 @@ function mxPistolSetup(m){SOLD.PS=null;if(!MXL.data||SET.mxAnim===false||!MXL.da
     const we=Pk.clone().sub(Pi).normalize(),wd=P2.clone().sub(P1);wd.addScaledVector(we,-wd.dot(we)).normalize();wd.y+=.2;wd.addScaledVector(we,-wd.dot(we)).normalize();
     const wy=wd.clone().negate(),wx=new THREE.Vector3().crossVectors(wy,we),q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(wx,wy,we));
     const hq=hb.getWorldQuaternion(new THREE.Quaternion());SOLD.pg={q:hq.clone().invert().multiply(q),p:hb.worldToLocal(P1.clone().lerp(P2,.42))}}
+  SOLD.pfing=fingerSnap();
   save.forEach(([a,w])=>a.setEffectiveWeight(w));SOLD.mixer.update(0)}
 const HEADLOOK={yaw:1.2,rate:9,chest:.18,body:5};   /* B138 head follows the camera: max turn (rad, ~70 deg), speed, share given to the chest */
 const CAMGUN={up:.18,level:1.0};   /* B134 hip camera with a gun: raise (m), and lift the look point so neutral aim is level */
@@ -4640,7 +4648,7 @@ function update(dt){
       const sp=(sprint?MOVE.sprint:S.crouch?1.5:P.ads?1.8:P.block?1.6:P.charging?1.4:MOVE.run)*mag*(P.atk>0&&!W[S.weapon].ranged?.75:1)*(S.bleed>0?.9:1)*(P.onGround?1:.96)*(bagOpen?.42:1)*(P.heal?.5:1)*packOf().spd*(inCreek(P.x,P.z)?.62:1);
       {const tvx=mx*sp,tvz=mz*sp,cur=Math.hypot(P.vx||0,P.vz||0),ac=P.onGround?(sp>cur?MOVE.acc:MOVE.dec):MOVE.air,kk=1-Math.exp(-ac*dt);   /* momentum: speed builds up and bleeds off */
         P.vx=lerp(P.vx||0,tvx,kk);P.vz=lerp(P.vz||0,tvz,kk);P.x+=P.vx*dt;P.z+=P.vz*dt;P.speed=Math.hypot(P.vx,P.vz)}
-      if(!P.ads&&P.atk<=0&&P.use<=0)P.face=lerpAngle(P.face,Math.atan2(mx,mz),1-Math.exp(-MOVE.turn*dt));
+      if(!P.ads&&P.atk<=0&&P.use<=0){const gs=gunStrafe()&&!sprint&&!bagOpen;P.face=lerpAngle(P.face,gs?P.yaw+Math.PI:Math.atan2(mx,mz),1-Math.exp(-(gs?GUNMOVE.turn:MOVE.turn)*dt))}   /* B139 gun out: face where you look and strafe / backpedal (8-way legs); sprinting turns you to run */
     }else if(P.airCarry&&!P.onGround){P.x+=P.airCarry.vx*dt;P.z+=P.airCarry.vz*dt;P.speed=Math.hypot(P.airCarry.vx,P.airCarry.vz);P.vx=P.airCarry.vx;P.vz=P.airCarry.vz}
     else if(P.onGround&&!S.grab&&!P.dead&&!(P.down>0)&&!P.search&&Math.hypot(P.vx||0,P.vz||0)>.05){const kk=1-Math.exp(-MOVE.dec*1.6*dt);P.vx=lerp(P.vx||0,0,kk);P.vz=lerp(P.vz||0,0,kk);P.x+=P.vx*dt;P.z+=P.vz*dt;P.speed=Math.hypot(P.vx,P.vz);if(P.speed<.2){P.speed=0;P.vx=P.vz=0}}   /* let go of the stick: a short heavy stop */
     else{P.speed=0;P.vx=P.vz=0}
@@ -4721,7 +4729,7 @@ function update(dt){
   if(!P.dead)player.g.rotation.x=P.down>0?-Math.min(1,P.down*2)*.9:lean;
   player.headG.rotation.x=P.ads?-P.aimPitch*.6:-lean*.6;player.head.rotation.x=player.headG.rotation.x;
   updateBag(dt);
-  if(SOLD.ready){const st=P.swingT/.36,mel=!w.ranged&&!!P.gather&&(P.gather.kind==='chop'||P.gather.kind==='mine');soldierPose(dt,{gesture:!(P.craft&&P.craft.kneel)&&!(P.dead>0)&&!(P.getup>0)&&!(P.heal&&EAT_ORDER.includes(P.heal.k))&&!!((P.act&&!clipAct(P.act))||P.block||S.grab||P.gather&&(w.ranged||P.gather.kind==='pick'||P.gather.kind==='search')||(w.ranged&&!(pistolClip()&&w.pist)&&!(rifleClip()&&!w.pist))||BG.st!=='closed'),cr,twist:mel?0:twist,lean:mel?0:lean,aimHold:w.ranged&&(atkHeld||padIn.atk)});pistolAimFix();rifleHands()}
+  if(SOLD.ready){const st=P.swingT/.36,mel=!w.ranged&&!!P.gather&&(P.gather.kind==='chop'||P.gather.kind==='mine');soldierPose(dt,{gesture:!(P.craft&&P.craft.kneel)&&!(P.dead>0)&&!(P.getup>0)&&!(P.heal&&EAT_ORDER.includes(P.heal.k))&&!!((P.act&&!clipAct(P.act))||P.block||S.grab||P.gather&&(w.ranged||P.gather.kind==='pick'||P.gather.kind==='search')||(w.ranged&&!(pistolClip()&&w.pist)&&!(rifleClip()&&!w.pist))||BG.st!=='closed'),cr,twist:mel?0:twist,lean:mel?0:lean,aimHold:w.ranged&&(atkHeld||padIn.atk)});pistolAimFix();rifleHands();gunFingers()}
   if(tracerT>0){tracerT-=dt;if(tracerT<=0)tracer.visible=false}
   if(hitmT>0){hitmT-=dt;if(hitmT<=0)$('hitm').classList.remove('on')}
 
