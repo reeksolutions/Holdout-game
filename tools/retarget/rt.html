@@ -1,0 +1,53 @@
+<!doctype html><html><body><script src="/node_modules/three/build/three.min.js"></script>
+<script src="/node_modules/three/examples/js/libs/fflate.min.js"></script>
+<script src="/node_modules/three/examples/js/curves/NURBSUtils.js"></script>
+<script src="/node_modules/three/examples/js/curves/NURBSCurve.js"></script>
+<script src="/mx/FBXLoader_p.js"></script>
+<script src="/node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+const MAP={Hips:'pelvis',Spine:'spine_01',Spine1:'spine_02',Spine2:'spine_03',Neck:'neck_01',Head:'Head'};
+for(const [S,s] of [['Left','l'],['Right','r']]){Object.assign(MAP,{[S+'Shoulder']:'clavicle_'+s,[S+'Arm']:'upperarm_'+s,[S+'ForeArm']:'lowerarm_'+s,[S+'Hand']:'hand_'+s,[S+'UpLeg']:'thigh_'+s,[S+'Leg']:'calf_'+s,[S+'Foot']:'foot_'+s,[S+'ToeBase']:'ball_'+s});
+  for(const [F,f] of [['Thumb','thumb'],['Index','index'],['Middle','middle'],['Ring','ring'],['Pinky','pinky']])for(let i=1;i<=3;i++)MAP[S+'Hand'+F+i]=f+'_0'+i+'_'+s}
+/* child used for direction alignment (target names) */
+const KID={pelvis:'spine_01',spine_01:'spine_02',spine_02:'spine_03',spine_03:'neck_01',neck_01:'Head'};
+for(const s of ['l','r']){Object.assign(KID,{['clavicle_'+s]:'upperarm_'+s,['upperarm_'+s]:'lowerarm_'+s,['lowerarm_'+s]:'hand_'+s,['hand_'+s]:'middle_01_'+s,['thigh_'+s]:'calf_'+s,['calf_'+s]:'foot_'+s,['foot_'+s]:'ball_'+s});
+  for(const f of ['thumb','index','middle','ring','pinky']){KID[f+'_01_'+s]=f+'_02_'+s;KID[f+'_02_'+s]=f+'_03_'+s}}
+function stance(FP,dt){/* ground speed: how fast a planted foot slides backward */
+  let sp=[];for(const k of [0,1]){const ys=[];for(let i=k;i<FP.length;i+=2)ys.push(FP[i].y);const mn=Math.min(...ys),mx=Math.max(...ys),th=mn+(mx-mn)*.15;
+    for(let i=k+2;i<FP.length;i+=2){const a=FP[i-2],b=FP[i];if(a.y<=th&&b.y<=th)sp.push(Math.hypot(b.x-a.x,b.z-a.z)/dt)}}
+  /* stride: forward range of each foot over the cycle, divided by the cycle time (ratio between clips is what matters) */
+  let rg=0;for(const k of [0,1])for(const ax of ['x','z']){const v=[];for(let i=k;i<FP.length;i+=2)v.push(FP[i][ax]);rg=Math.max(rg,Math.max(...v)-Math.min(...v))}
+  return +(rg/(FP.length/2*dt)).toFixed(4)}
+window.ual=async(names,fps)=>{const G=await new Promise((r,j)=>new THREE.GLTFLoader().load('/srv/anims.json',r,undefined,j));const tb={};G.scene.traverse(o=>{tb[o.name]=o});
+  const mixer=new THREE.AnimationMixer(G.scene),R={};for(const n of names){const c=G.animations.find(a=>a.name===n);if(!c)continue;mixer.stopAllAction();const a=mixer.clipAction(c);a.play();const FP=[];
+    for(let t=0;t<=c.duration;t+=1/fps){mixer.setTime(t);G.scene.updateMatrixWorld(true);FP.push(tb.foot_l.getWorldPosition(new THREE.Vector3()),tb.foot_r.getWorldPosition(new THREE.Vector3()))}R[n]=[c.duration,stance(FP,1/fps)]}return R};
+window.run=async(fbx,name,fps)=>{
+  const [F,G]=await Promise.all([new Promise((r,j)=>new THREE.FBXLoader().load(fbx,r,undefined,j)),new Promise((r,j)=>new THREE.GLTFLoader().load('/srv/anims.json',r,undefined,j))]);
+  const sb={};F.traverse(o=>{if(o.isBone||o.type==='Bone'){const n=o.name.replace(/^mixamorig:?/,'');sb[n]=o}});
+  const tb={};G.scene.traverse(o=>{if(o.isBone||tb[o.name]===undefined&&o.name)tb[o.name]=o});
+  const T=Object.fromEntries(Object.entries(MAP).filter(([s,t])=>sb[s]&&tb[t]));
+  const inv={};for(const s in T)inv[T[s]]=s;
+  F.updateMatrixWorld(true);G.scene.updateMatrixWorld(true);
+  const wq=o=>o.getWorldQuaternion(new THREE.Quaternion()),wp=o=>o.getWorldPosition(new THREE.Vector3());
+  const srcRest={};for(const s in T)srcRest[s]=wq(sb[s]);
+  const srcRestHip=wp(sb.Hips);
+  /* align target rest bone directions to the source rest pose (A-pose -> T-pose) */
+  const order=[];G.scene.traverse(o=>{if(inv[o.name])order.push(o.name)});
+  for(const t of order){const k=KID[t];if(!k||!tb[k]||!inv[k])continue;const s=inv[t],sk=inv[k];
+    const dT=wp(tb[k]).sub(wp(tb[t])).normalize(),dS=wp(sb[sk]).sub(wp(sb[s])).normalize();
+    const q=new THREE.Quaternion().setFromUnitVectors(dT,dS),o=tb[t],nw=q.multiply(wq(o));
+    const pw=o.parent?wq(o.parent):new THREE.Quaternion();o.quaternion.copy(pw.invert().multiply(nw));G.scene.updateMatrixWorld(true)}
+  const tgtRest={};for(const t of order)tgtRest[t]=wq(tb[t]);
+  const tgtHipH=wp(tb.pelvis).y,srcHipH=srcRestHip.y,hs=tgtHipH/srcHipH;
+  const restLocal={};G.scene.traverse(o=>{restLocal[o.name]=o.quaternion.clone()});
+  const pelvisRestPos=tb.pelvis.position.clone(),pelvisParent=tb.pelvis.parent;
+  const clip=F.animations[0],mixer=new THREE.AnimationMixer(F);const act=mixer.clipAction(clip);act.setLoop(THREE.LoopOnce);act.clampWhenFinished=true;act.play();
+  const FP=[];const dur=clip.duration,N=Math.max(2,Math.round(dur*fps)+1),times=[],Q={},Pp=[];for(const t of order)Q[t]=[];
+  for(let i=0;i<N;i++){const tm=Math.min(dur,i/fps);times.push(+tm.toFixed(4));mixer.setTime(tm);F.updateMatrixWorld(true);
+    for(const t of order){const s=inv[t],o=tb[t];const w=wq(sb[s]).multiply(srcRest[s].clone().invert()).multiply(tgtRest[t]);
+      const pw=wq(o.parent);o.quaternion.copy(pw.invert().multiply(w));o.updateMatrixWorld(true);Q[t].push(...o.quaternion.toArray().map(v=>+v.toFixed(5)))}
+    const d=wp(sb.Hips).sub(srcRestHip).multiplyScalar(hs);const tw=wp(tb.pelvis).copy(pelvisParent.localToWorld(pelvisRestPos.clone())).add(d);
+    const lp=pelvisParent.worldToLocal(tw.clone());Pp.push(...lp.toArray().map(v=>+v.toFixed(5)));tb.pelvis.position.copy(lp);G.scene.updateMatrixWorld(true);FP.push(wp(tb.foot_l),wp(tb.foot_r))}
+  tb.pelvis.position.copy(pelvisRestPos);
+  return {name,dur,times,q:Q,pelvis:Pp,spd:stance(FP,1/fps),bones:order.length,src:Object.keys(sb).length,clipTracks:clip.tracks.length}};
+</script></body></html>

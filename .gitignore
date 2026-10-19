@@ -1,0 +1,6 @@
+qa.html
+tests/_game.js
+tests/shots/
+tests/node_modules
+__pycache__/
+*.pyc

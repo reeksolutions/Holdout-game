@@ -1,0 +1,1 @@
+{"name":"holdout-tests","private":true,"description":"Local three.js for headless tests (same version the game loads from CDN)","devDependencies":{"three":"0.128.0"}}

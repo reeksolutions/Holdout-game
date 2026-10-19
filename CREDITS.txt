@@ -1,0 +1,159 @@
+HOLDOUT - prototype build (build 59)
+
+Characters, outfits and animations:
+- Quaternius - Universal Base Characters, Universal Animation Library 1 & 2,
+  Modular Character Outfits - Fantasy (Ranger). All CC0 1.0 (public domain). https://quaternius.com
+Engine: three.js r128 (MIT), loaded from CDN.
+
+To play: open index.html from a web host (itch.io HTML5 upload, Netlify, GitHub Pages).
+Opening the file straight from your computer won't load the character - browsers block that.
+Co-op only works on the Claude artifact link.
+
+
+WASD move · Shift sprint · Space jump/vault · Left click attack (hold = heavy) · Right click aim/block
+V roll · C crouch · E use · Q swap · I bag · M map · P pause
+Menu has a MAP switch: Desert City (play) or Movement Test Area.
+Phones/tablets: left thumb moves, right thumb looks, buttons on the right. Controllers work too.
+
+Guns: Ultimate Gun Pack by Quaternius (CC0) - pistol, revolver, shotgun, SMG, assault rifle, sniper.
+R = reload (keyboard). Controller/touch: press X / USE with nothing to interact with.
+
+Build 67 controls: Hotbar 1 melee, 2 sidearm, 3 primary, 4 light, 5 bandage, 6 medkit, 7 pills, 8 food (number keys, tap, or hold Y + D-pad left/right).
+B = instant roll, R3 = crouch (R3 = switch shoulder while aiming). Settings > INPUT: touch buttons AUTO/ALWAYS/OFF, dodge INSTANT/CLASSIC, crosshair size.
+Characters: Ultimate Modular Men Pack by Quaternius (CC0), re-skinned onto the Ranger skeleton.
+
+Finger grip poses measured from "FPS Rig AKM" and "FPS Rig" by J-Toastie (Poly Pizza). Only pose angles were used; no model files are included.
+
+- "The Wrapped" PS1 horror monster by Codyanka (https://codyanka.itch.io/the-wrapped), CC0 public domain. Used for The Twisted (runner).
+
+
+SOUNDS (via the CDDA "CC-Sounds" pack by Fris0uman, sourced from freesound.org / soundbible; only CC0 and CC-BY files used, some edited: trimmed, pitched, layered):
+- 556_auto_rifle_shot_01.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself at nominal distance from a shooter firing a 5.56mm rifle on an outdoor gun range, a Sig Sauer MCX Spear LT, and touching up the resulting audio
+- 556_auto_rifle_shot_02.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself at nominal distance from a shooter firing a 5.56mm rifle on an outdoor gun range, a Sig Sauer MCX Spear LT, and touching up the resulting audio
+- 556_auto_rifle_shot_03.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself at nominal distance from a shooter firing a 5.56mm rifle on an outdoor gun range, a Sig Sauer MCX Spear LT, and touching up the resulting audio
+- big_bash_swing_1.ogg by orangesheepdog (CC0) https://freesound.org/people/orangesheepdog/sounds/367182/
+- big_cutting_swing_1.ogg by qubodup (CC0) https://freesound.org/people/qubodup/sounds/59992/
+- big_stabbing_flesh_1.ogg by magnuswaker (CC0) https://freesound.org/people/magnuswaker/sounds/522091/
+- big_stabbing_flesh_2.ogg by magnuswaker (CC0) https://freesound.org/people/magnuswaker/sounds/528263/
+- big_stabbing_flesh_3.ogg by magnuswaker (CC0) https://freesound.org/people/magnuswaker/sounds/530117/
+- bite_hit_1.ogg by MrPokephile (CC0 1.0) https://freesound.org/people/MrPokephile/sounds/155973/
+- bite_hit_2.ogg by MrPokephile (CC0 1.0) https://freesound.org/people/MrPokephile/sounds/155973/
+- bite_hit_3.ogg by MrPokephile (CC0 1.0) https://freesound.org/people/MrPokephile/sounds/155973/
+- bite_hit_4.ogg by MrPokephile (CC0 1.0) https://freesound.org/people/MrPokephile/sounds/155973/
+- bite_hit_5.ogg by MrPokephile (CC0 1.0) https://freesound.org/people/MrPokephile/sounds/155973/
+- bite_miss_1.ogg by BOBtheROSS (CC0 1.0) https://freesound.org/people/BOBtheROSS/sounds/392173/
+- bite_miss_2.ogg by BOBtheROSS (CC0 1.0) https://freesound.org/people/BOBtheROSS/sounds/392173/
+- bite_miss_3.ogg by BOBtheROSS (CC0 1.0) https://freesound.org/people/BOBtheROSS/sounds/392173/
+- bite_miss_4.ogg by BOBtheROSS (CC0 1.0) https://freesound.org/people/BOBtheROSS/sounds/392173/
+- bite_miss_5.ogg by BOBtheROSS (CC0 1.0) https://freesound.org/people/BOBtheROSS/sounds/392173/
+- bolt_action_rifle_load_01.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading a magazine into an IG1889 federal rifle, locking the magazine into the receiver with the magazine-disconnector switch, and cycling the bolt
+- bolt_action_rifle_load_02.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading a magazine into an IG1889 federal rifle, locking the magazine into the receiver with the magazine-disconnector switch, and cycling the bolt
+- bolt_action_rifle_load_03.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, locking the bolt back on an IG1889 federal rifle, extracting the magazine after flipping down the magazine-disconnector switch, loading a fresh magazine (it’s actually the same one but shush), locking it into place with the disconnector, and cycling the bolt forwards
+- bolt_action_rifle_load_04.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading a magazine into an IG1889 federal rifle, locking the magazine into the receiver with the magazine-disconnector switch, and cycling the bolt
+- brass_eject.ogg by FST180081 (CC BY 4.0) https://freesound.org/people/FST180081/sounds/441806/
+- brass_eject_1.ogg by FST180081 (CC BY 4.0) https://freesound.org/people/FST180081/sounds/441809/
+- church_bells.ogg by Nox_Sound (CC0 1.0) https://freesound.org/people/Nox_Sound/sounds/563885/
+- clear_night_1.ogg by rsn267 (CC0 1.0) https://freesound.org/people/rsn267/sounds/275595/
+- clear_night_3.ogg by rsn267 (CC0 1.0) https://freesound.org/people/rgbrobot/sounds/209804/
+- clear_obstacle_2.ogg by MWsfx (CC0 1.0) https://freesound.org/s/574247/
+- clear_obstacle_3.ogg by MWsfx (CC0 1.0) https://freesound.org/s/574247/
+- empty_1.ogg by Rolly-SFX (CC0 1.0) https://freesound.org/people/Rolly-SFX/sounds/528708/
+- female_mad_whisper_1.ogg by carmsie (CC0 1.0) https://freesound.org/people/carmsie/sounds/271633/
+- female_mad_whisper_2.ogg by carmsie (CC0 1.0) https://freesound.org/people/carmsie/sounds/271633/
+- female_scream_1.ogg by tim.kahn (CC BY 4.0) https://freesound.org/people/tim.kahn/sounds/631835/
+- female_scream_2.ogg by tim.kahn (CC BY 4.0) https://freesound.org/people/tim.kahn/sounds/631835/
+- handgun_1.ogg by GoodSoundForYou (CC-BY-3.0) https://soundbible.com/2120-9mm-Gunshot.html#
+- hurt_m_1.ogg by micahlg (CC0 1.0) https://freesound.org/people/micahlg/sounds/413181/
+- hurt_m_2.ogg by micahlg (CC0 1.0) https://freesound.org/people/micahlg/sounds/413183/
+- hurt_m_3.ogg by micahlg (CC0 1.0) https://freesound.org/people/micahlg/sounds/413184/
+- hurt_m_4.ogg by micahlg (CC0 1.0) https://freesound.org/people/micahlg/sounds/413185/
+- male_heavy_breathing_1.ogg by Teebee_Deael (CC0 1.0) https://freesound.org/people/Teebee_Deael/sounds/620932/
+- male_scared_heavy_breathing_1.ogg by Nox_Sound (CC0 1.0) https://freesound.org/people/Nox_Sound/sounds/554906/
+- male_scared_heavy_breathing_2.ogg by Nox_Sound (CC0 1.0) https://freesound.org/people/Nox_Sound/sounds/554906/
+- male_scream_1.ogg by tim.kahn (CC BY 4.0) https://freesound.org/people/tim.kahn/sounds/631835/
+- male_scream_2.ogg by tim.kahn (CC BY 4.0) https://freesound.org/people/tim.kahn/sounds/631835/
+- pocket_pistol_load_01.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading a magazine into a Berretta M1934 and manually operating the slide with the safety disengaged
+- pocket_pistol_load_02.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading a magazine into a Berretta M1934 while the slide was already locked back, then disengaging the safety to drop the slide
+- pocket_pistol_load_03.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading a magazine into a Beretta M1934 with the safety engaged, racking back the slide, and then releasing the safety to chamber a round
+- pocket_pistol_load_04.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading a magazine into a Berretta M1934 while the slide was already locked back, then disengaging the safety to drop the slide
+- rifle_1.ogg by Mike Koenig (CC-BY-3.0) https://soundbible.com/1998-Gun-Fire.html
+- shell_load_01.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading an empty shell into the tube magazine of a Browning Auto 5
+- shell_load_02.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading an empty shell into the tube magazine of a Browning Auto 5
+- shell_load_03.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading an empty shell into the tube magazine of a Browning Auto 5
+- shell_load_04.ogg by DoctorBoomstick (CC BY 4.0) Audio was recorded by myself, loading an empty shell into the tube magazine of a Browning Auto 5
+- shotgun_1.ogg by MATRIXXX_ (CC-BY) https://freesound.org/people/MATRIXXX_/sounds/473846/
+- small_bash_flesh_1.ogg by mateusboga (CC0) https://freesound.org/people/mateusboga/sounds/426065/
+- small_bash_flesh_2.ogg by mateusboga (CC0) https://freesound.org/people/mateusboga/sounds/426065/
+- small_bash_flesh_3.ogg by mateusboga (CC0) https://freesound.org/people/mateusboga/sounds/426065/
+- small_bash_flesh_4.ogg by mateusboga (CC0) https://freesound.org/people/mateusboga/sounds/426065/
+- small_bash_swing_1.ogg by Danjocross (CC0) https://freesound.org/people/Danjocross/sounds/507470/
+- small_bash_swing_2.ogg by Danjocross (CC0) https://freesound.org/people/Danjocross/sounds/507470/
+- small_bash_swing_3.ogg by Danjocross (CC0) https://freesound.org/people/Danjocross/sounds/507470/
+- small_bash_swing_4.ogg by Danjocross (CC0) https://freesound.org/people/Danjocross/sounds/507470/
+- small_bash_swing_5.ogg by Danjocross (CC0) https://freesound.org/people/Danjocross/sounds/507470/
+- small_bash_swing_6.ogg by Danjocross (CC0) https://freesound.org/people/Danjocross/sounds/507470/
+- small_bash_swing_7.ogg by Danjocross (CC0) https://freesound.org/people/Danjocross/sounds/507470/
+- small_stabbing_flesh_1.ogg by Podcapocalipsis (CC0) https://freesound.org/people/Podcapocalipsis/sounds/521030/
+- small_stabbing_flesh_2.ogg by Podcapocalipsis (CC0) https://freesound.org/people/Podcapocalipsis/sounds/521030/
+- small_stabbing_flesh_3.ogg by Podcapocalipsis (CC0) https://freesound.org/people/Podcapocalipsis/sounds/521030/
+- small_stabbing_flesh_4.ogg by Podcapocalipsis (CC0) https://freesound.org/people/Podcapocalipsis/sounds/521030/
+- small_stabbing_flesh_5.ogg by Podcapocalipsis (CC0) https://freesound.org/people/Podcapocalipsis/sounds/521030/
+- small_stabbing_flesh_6.ogg by Podcapocalipsis (CC0) https://freesound.org/people/Podcapocalipsis/sounds/521030/
+- speech_zombie_groan.ogg by FuzzyTuesday (CC0) https://freesound.org/people/FuzzyTuesday/sounds/730386/
+- speech_zombie_groan_1.ogg by FuzzyTuesday (CC0) https://freesound.org/people/FuzzyTuesday/sounds/730386/
+- speech_zombie_groan_4.ogg by mazlyn (CC0) https://freesound.org/people/mazlyn/sounds/338267/
+- unarmed_hit_flesh_1.ogg by deleted_user_7146007 (CC0) https://freesound.org/people/deleted_user_7146007/sounds/383882/
+- unarmed_hit_flesh_2.ogg by deleted_user_7146007 (CC0) https://freesound.org/people/deleted_user_7146007/sounds/383882/
+- unarmed_hit_flesh_3.ogg by deleted_user_7146007 (CC0) https://freesound.org/people/deleted_user_7146007/sounds/383882/
+- unarmed_hit_flesh_4.ogg by deleted_user_7146007 (CC0) https://freesound.org/people/deleted_user_7146007/sounds/383882/
+- unarmed_hit_flesh_5.ogg by deleted_user_7146007 (CC0) https://freesound.org/people/deleted_user_7146007/sounds/383882/
+- walk_grass_3.ogg by Ashe Kirk (CC0 1.0) https://freesound.org/s/151229/
+- walk_grass_4.ogg by Ashe Kirk (CC0 1.0) https://freesound.org/s/151230/
+- walk_grass_5.ogg by Ashe Kirk (CC0 1.0) https://freesound.org/s/151228/
+- walk_grass_6.ogg by Ashe Kirk (CC0 1.0) https://freesound.org/s/151235/
+- walk_t_floor_1.ogg by kretopi (CC0 1.0) https://freesound.org/s/406744/
+- walk_t_floor_2.ogg by kretopi (CC0 1.0) https://freesound.org/s/406745/
+- walk_t_floor_3.ogg by kretopi (CC0 1.0) https://freesound.org/s/406746/
+- walk_t_floor_4.ogg by kretopi (CC0 1.0) https://freesound.org/s/406747/
+- walk_t_floor_5.ogg by kretopi (CC0 1.0) https://freesound.org/s/406748/
+- walk_t_floor_6.ogg by kretopi (CC0 1.0) https://freesound.org/s/406749/
+- walk_t_gravel_1.ogg by ali-6868 (CC0) https://freesound.org/s/384871/
+- walk_t_gravel_10.ogg by ali-6868 (CC0) https://freesound.org/s/384880/
+- walk_t_gravel_2.ogg by ali-6868 (CC0) https://freesound.org/s/384872/
+- walk_t_gravel_3.ogg by ali-6868 (CC0) https://freesound.org/s/384873/
+- walk_t_gravel_4.ogg by ali-6868 (CC0) https://freesound.org/s/384874/
+- walk_t_gravel_5.ogg by ali-6868 (CC0) https://freesound.org/s/384875/
+- walk_t_gravel_6.ogg by ali-6868 (CC0) https://freesound.org/s/384876/
+- walk_t_gravel_7.ogg by ali-6868 (CC0) https://freesound.org/s/384877/
+- walk_t_gravel_8.ogg by ali-6868 (CC0) https://freesound.org/s/384878/
+- walk_t_gravel_9.ogg by ali-6868 (CC0) https://freesound.org/s/384879/
+- walk_t_rock_floor_1.ogg by samulis (CC0) https://freesound.org/s/197781/
+- walk_t_rock_floor_2.ogg by samulis (CC0) https://freesound.org/s/197780/
+- walk_t_rock_floor_3.ogg by samulis (CC0) https://freesound.org/s/197779/
+- walk_t_rock_floor_4.ogg by samulis (CC0) https://freesound.org/s/197778/
+- walk_water_1.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_10.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_2.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_3.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_4.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_5.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_6.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_7.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_8.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- walk_water_9.ogg by dawidwmika (CC0) https://freesound.org/s/372518/
+- weather_cloudy_autumn.ogg by Apostolinkyyti (CC0 1.0) https://freesound.org/people/Apostolinkyyti/sounds/128940/
+- weather_sunny_spring.ogg by Modding (CC0 1.0) https://freesound.org/people/Modding/sounds/574108/
+- zombie_death_3.ogg by bananplyte (CC0 1.0) https://freesound.org/people/bananplyte/sounds/452347/
+- zombie_death_4.ogg by tonsil5 (CC0) https://freesound.org/people/tonsil5/sounds/555412/
+
+GUN SOUNDS (freesound.org, picked by reek; trimmed/normalized; sniper file split into shot + bolt):
+- 427592 "9mm Pistol Shot" by michorvath (pistol, revolver)
+- 427596 "AR15 Rifle Shot" by michorvath (AR, SMG, service rifle)
+- 408099 "Shotgun Shot 02" by lilmati (shotgun)
+- 398348 "Regular Sniper Rifle Shot w/ Bolt Reload (outdoor, mixed)" by evanboyerman (sniper shot + bolt)
+  License: as listed on each freesound page (CC0 / CC-BY); credit kept here either way.
+- 854499 "A generic 9mm pistol being reloaded" by serutonin-deprivd (pistol + revolver reload)
+- 815879 "Assault Rifle Reload" by qubodup (AR + SMG reload)
+- 108793 "Shell Load" by ceebfrack (shotgun shell load)
+- 326119 "Shotgun Glock" by luannwepener (shotgun pump rack)
+- 412298 "Gun Trigger Pull 5" by jaklocke (empty click)
