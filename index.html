@@ -1984,10 +1984,10 @@ function setupSoldier(gl,ga){
     const d=p2.sub(p1).normalize(),t=new THREE.Vector3(x,y,z).normalize(),q=new THREE.Quaternion().setFromUnitVectors(d,t);
     const ax=new THREE.Vector3(q.x,q.y,q.z);const ang=2*Math.acos(clamp(q.w,-1,1));if(ax.lengthSq()>1e-8){ax.normalize();bRot(b[bn],ax.x,ax.y,ax.z,ang)}m.updateMatrixWorld(true)};
   aim('LeftArm','LeftForeArm',.16,-1,.02);aim('LeftForeArm','LeftHand',.06,-1,.12);aim('RightArm','RightForeArm',-.16,-1,.02);aim('RightForeArm','RightHand',-.06,-1,.12);
-  SOLD.hc=[];['Right','Left'].forEach(sd=>{const h=b[sd+'Hand'],L=n=>{const v=new THREE.Vector3();b[sd+'Hand'+n].getWorldPosition(v);return h.worldToLocal(v)};
+  SOLD.lreach=0;SOLD.hc=[];['Right','Left'].forEach(sd=>{const h=b[sd+'Hand'],L=n=>{const v=new THREE.Vector3();b[sd+'Hand'+n].getWorldPosition(v);return h.worldToLocal(v)};
     const mid=L('Middle1'),idx=L('Index1'),pk=L('Pinky1'),th=L('Thumb2');const f=mid.clone().normalize(),k=idx.clone().sub(pk);k.addScaledVector(f,-k.dot(f)).normalize();
     const pn=th.clone();pn.addScaledVector(f,-pn.dot(f));pn.addScaledVector(k,-pn.dot(k));pn.normalize();
-    SOLD.hc.push({f,k,pn,sgn:Math.sign(pn.dot(new THREE.Vector3().crossVectors(f,k)))||1,palm:mid.clone().multiplyScalar(.62).addScaledVector(pn,mid.length()*.32),side:sd})});
+    SOLD.hc.push({f,k,pn,sgn:Math.sign(pn.dot(new THREE.Vector3().crossVectors(f,k)))||1,palm:mid.clone().multiplyScalar(.62).addScaledVector(pn,mid.length()*.32),mid:mid.clone(),kk:idx.clone().sub(pk).addScaledVector(f,-idx.clone().sub(pk).dot(f)).normalize(),side:sd})});
   SOLD.fing=[];[['Right',0],['Left',1]].forEach(([sd,h])=>{const c=SOLD.hc[h],qh=new THREE.Quaternion();b[sd+'Hand'].getWorldQuaternion(qh);const hw=new THREE.Vector3().crossVectors(c.f,c.pn).applyQuaternion(qh).normalize();
     const add=(o,a)=>{if(!o)return;const qp=new THREE.Quaternion();o.parent.getWorldQuaternion(qp);SOLD.fing.push({n:o.name,q0:o.quaternion.clone(),ax:hw.clone().applyQuaternion(qp.invert()).normalize(),a})};
     ['Index','Middle','Ring','Pinky'].forEach(fn=>FCURL.forEach((a,i)=>add(b[sd+'Hand'+fn+(i+1)],a+(fn==='Pinky'?.1:fn==='Ring'?.05:0))));
@@ -2416,11 +2416,15 @@ const _g1=new THREE.Vector3(),_g2=new THREE.Vector3(),_p1=new THREE.Vector3(),_p
 /* hand grip: puts the palm (not the wrist) on a handle, knuckles along the handle, fingers curled */
 const _hF=new THREE.Vector3(),_hK=new THREE.Vector3(),_hP=new THREE.Vector3(),_hm=new THREE.Matrix4(),_hl=new THREE.Matrix4(),_hq=new THREE.Quaternion(),_ho=new THREE.Vector3(),_hs=new THREE.Vector3(),_hw=new THREE.Vector3(),_ht=new THREE.Vector3(),_hA=new THREE.Vector3();
 const _hT=new THREE.Vector3(),_hU=new THREE.Vector3();
+/* B140 handle axis in hand space. With c._useKK (melee) it follows the real knuckle line, palm arch included, so every finger is the same distance from the handle */
+const _gbN=new THREE.Vector3();
+function gripBasis(c,tilt,T,U,N){const ct=Math.cos(tilt||0),st=Math.sin(tilt||0),k0=c._useKK&&c.kk?c.kk:c.k;T.copy(k0).multiplyScalar(ct).addScaledVector(c.f,st).normalize();
+  U.copy(c.f).multiplyScalar(ct).addScaledVector(k0,-st);U.addScaledVector(T,-U.dot(T)).normalize();N.crossVectors(U,T);if(N.dot(c.pn)<0)N.negate();return N}
 function handQ(c,fore,A,out,tilt){ // rotation (sg space) that maps the hand's local axes onto the grip; tilt tips the handle within the fist
-  const ct=Math.cos(tilt||0),st=Math.sin(tilt||0);_hT.copy(c.k).multiplyScalar(ct).addScaledVector(c.f,st);_hU.copy(c.f).multiplyScalar(ct).addScaledVector(c.k,-st);
+  gripBasis(c,tilt,_hT,_hU,_gbN);
   _hK.copy(A).normalize();_hF.copy(fore).addScaledVector(_hK,-fore.dot(_hK));if(_hF.lengthSq()<1e-5)_hF.set(0,-1,0).addScaledVector(_hK,_hK.y);_hF.normalize();
   _hP.crossVectors(_hF,_hK).multiplyScalar(c.sgn);
-  _hm.makeBasis(_hF,_hK,_hP);_hl.makeBasis(_hU,_hT,c.pn).transpose();return out.setFromRotationMatrix(_hm.multiply(_hl));
+  _hm.makeBasis(_hF,_hK,_hP);_hl.makeBasis(_hU,_hT,_gbN).transpose();return out.setFromRotationMatrix(_hm.multiply(_hl));
 }
 /* the underside of a gun's handguard near a point along the barrel, found by casting rays up at the model (+z of the gun points down); skips the magazine */
 const _hgM=new THREE.Matrix4(),_hgR=new THREE.Raycaster(),_hgO=new THREE.Vector3(),_hgD=new THREE.Vector3();
@@ -2463,20 +2467,62 @@ function chestDelta(){ // how far the chest has moved/rotated from rest this fra
 /* ---------- melee: the weapon flies along keyframed arcs, the hands follow by IK ---------- */
 /* per-weapon grip: g = where the right fist closes on the handle (model y), g2 = left hand on the shaft (two-handers),
    tilt = handle angle inside the fist, roll = blade/edge turn around the handle */
-const WGRIP={club:{g:-.07,tilt:.28,roll:0},bat:{g:-.06,tilt:.28,roll:0},machete:{g:-.045,tilt:.32,roll:0},crowbar:{g:-.09,tilt:.25,roll:0},
-  axe:{g:-.07,tilt:.22,roll:0},katana:{g:-.04,tilt:.3,roll:0},torch:{g:-.12,tilt:.15,roll:0},
-  sledge:{g:-.07,g2:-.44,tilt:0,roll:0},spear:{g:-.2,g2:-.7,tilt:0,roll:Math.PI/2}};
-const TWOH={sledge:1,spear:1};
+/* B140 grip system: every melee weapon only needs g (where the fist sits on the handle, model y). Optional: g2 (second hand's farthest
+   point -> two-handed), tilt, roll, r (handle radius override, m; otherwise measured from the model), tight (0-1, extra finger squeeze). */
+const WGRIP={club:{g:-.07,tilt:.28,roll:0},bat:{g:-.06,tilt:.28,roll:0},machete:{g:-.045,tilt:.32,roll:0,r:.016,tight:.6},crowbar:{g:-.09,tilt:.25,roll:0},
+  axe:{g:-.06,g2:-.4,tilt:.05,roll:0,r:.026},katana:{g:-.04,tilt:.3,roll:0,r:.015,tight:.6},torch:{g:-.12,tilt:.15,roll:0},
+  sledge:{g:-.07,g2:-.44,tilt:0,roll:0,r:.027},spear:{g:-.2,g2:-.7,tilt:0,roll:Math.PI/2}};
+const TWOH={};for(const id in WGRIP)if(WGRIP[id].g2)TWOH[id]=1;   /* two-handed = has a g2 */
+const GRIP={min:[-.3,-.8,-.6],offMax:.03,palm:.17,fing:.1,tipK:.8,max:[1.55,1.75,1.45],step:.04,thumb:[.25,.45,.35],minSpan:.2};   /* palm/finger half-thickness as a share of palm length; joint limits (rad) */
+const _gb=new THREE.Box3();
+function handleInfo(id,g){   /* handle radius + centre at the grip, from the model's own parts (cached per weapon) */
+  const q=WGRIP[id]||WGRIP.club;HINFO[id]=HINFO[id]||{};if(HINFO[id].r)return HINFO[id];
+  const p0=g.position.clone(),q0=g.quaternion.clone(),s0=g.scale.clone();g.position.set(0,0,0);g.quaternion.identity();g.scale.set(1,1,1);g.updateMatrixWorld(true);
+  let best=null;g.traverse(o=>{if(!o.isMesh)return;_gb.setFromObject(o);if(q.g<_gb.min.y-.005||q.g>_gb.max.y+.005)return;const rx=(_gb.max.x-_gb.min.x)/2,rz=(_gb.max.z-_gb.min.z)/2,r=(rx+rz)/2;if(r>.004&&(!best||r<best.r))best={r,cx:(_gb.max.x+_gb.min.x)/2,cz:(_gb.max.z+_gb.min.z)/2}});
+  g.position.copy(p0);g.quaternion.copy(q0);g.scale.copy(s0);
+  const r=clamp(q.r||(best?best.r:.02),.01,.045);return (HINFO[id]={r,cx:best?best.cx:0,cz:best?best.cz:0})}
+const HINFO={};
+const gripTh=(c,k,lo,hi)=>clamp(c.mid.length()*SOLD.hscale*k,lo,hi)/SOLD.hscale;   /* palm / finger half-thickness for this skin (m -> hand units), clamped so oversized hand bones don't float the grip */
+function palmFor(c,r,off){return c.mid.clone().multiplyScalar(.62).addScaledVector(c.pn,gripTh(c,GRIP.palm,.011,.017)+r/SOLD.hscale+(off||0))}   /* handle centre in hand space: palm surface + radius */
+/* fingers wrapped onto a handle of radius r: each joint curls until its next joint (or fingertip) touches the handle surface. Uses this skin's own bones, so every hand size fits */
+function fingerWrap(L,r,tilt,tight,off){
+  const c=SOLD.hc[L?1:0];c._wrap=c._wrap||{};const key=r.toFixed(4)+'|'+(tilt||0).toFixed(3)+'|'+(tight||0)+'|'+(off||0).toFixed(5);if(c._wrap[key])return c._wrap[key];
+  const sd=L?'Left':'Right',b=SOLD.b,h=b[sd+'Hand'],hs=SOLD.hscale,ml=c.mid.length();
+  const T=new THREE.Vector3(),uu0=c._useKK;c._useKK=true;gripBasis(c,tilt,T,new THREE.Vector3(),new THREE.Vector3());c._useKK=uu0;const P0=palmFor(c,r,off),Rr=r/hs+gripTh(c,GRIP.fing,.0065,.0095)*(1-.35*(tight||0));
+  const dist=p=>{const d=p.clone().sub(P0);d.addScaledVector(T,-d.dot(T));return d.length()};
+  const FE={};for(const e of SOLD.fing)FE[e.n]=e;const all=[];['Index','Middle','Ring','Pinky','Thumb'].forEach(fn=>[1,2,3].forEach(i=>{const o=b[sd+'Hand'+fn+i];if(o)all.push([o,o.quaternion.clone()])}));
+  const loc=o=>h.worldToLocal(o.getWorldPosition(new THREE.Vector3())),out=[],qa=new THREE.Quaternion();
+  const curl=(o,e,a)=>{o.quaternion.copy(e.q0).premultiply(qa.setFromAxisAngle(e.ax,a));h.updateMatrixWorld(true)};
+  for(const e of SOLD.fing){const o=b[e.n];if(o)o.quaternion.copy(e.q0)}h.updateMatrixWorld(true);
+  for(const fn of ['Index','Middle','Ring','Pinky']){const J=[1,2,3].map(i=>b[sd+'Hand'+fn+i]);if(J.some(j=>!j||!FE[j.name]))continue;
+    for(let i=0;i<3;i++){const o=J[i],e=FE[o.name],nxt=()=>i<2?loc(J[i+1]):loc(J[2]).clone().add(loc(J[2]).sub(loc(J[1])).multiplyScalar(GRIP.tipK));
+      let a=GRIP.min[i];for(;a<=GRIP.max[i];a+=GRIP.step){curl(o,e,a);if(dist(nxt())<=Rr)break}
+      a=Math.min(a+(tight||0)*.08,GRIP.max[i]);curl(o,e,a);out.push([o,o.quaternion.clone()])}
+    out.pen=Math.min(out.pen||0,dist(loc(J[1]))-Rr,dist(loc(J[2]))-Rr)}   /* deepest finger inside the handle (negative = poking through) */
+  /* thumb: wraps round the handle the other way, about the handle's own axis, until it touches */
+  {const TJ=[1,2,3].map(i=>b[sd+'HandThumb'+i]);if(TJ.every(o=>o&&FE[o.name])){const hq=h.getWorldQuaternion(new THREE.Quaternion()),Tw=T.clone().applyQuaternion(hq),pq=new THREE.Quaternion();
+    TJ[0].quaternion.copy(FE[TJ[0].name].q0).premultiply(qa.setFromAxisAngle(FE[TJ[0].name].ax,GRIP.thumb[0]));h.updateMatrixWorld(true);
+    for(let i=1;i<3;i++){const o=TJ[i],e=FE[o.name],nxt=()=>i<2?loc(TJ[2]):loc(TJ[2]).clone().add(loc(TJ[2]).sub(loc(TJ[1])).multiplyScalar(GRIP.tipK));
+      o.parent.getWorldQuaternion(pq);const ax=Tw.clone().applyQuaternion(pq.clone().invert()).normalize(),rot=a=>{o.quaternion.copy(e.q0).premultiply(qa.setFromAxisAngle(ax,a));h.updateMatrixWorld(true)};
+      rot(.15);const dp=dist(nxt());rot(-.15);const dn=dist(nxt());const sg=dp<dn?1:-1;let a=0;for(;a<=1.3;a+=GRIP.step){rot(a*sg);if(dist(nxt())<=Rr)break}rot(Math.min(a,1.3)*sg)}
+    TJ.forEach(o=>out.push([o,o.quaternion.clone()]))}}
+  for(const [o,q] of all)o.quaternion.copy(q);h.updateMatrixWorld(true);return (c._wrap[key]=out)}
+function gripFit(L,id){const q=WGRIP[id]||WGRIP.club,hi=HINFO[id],k=L?'offL':'off';if(!hi)return 0;if(hi[k]!==undefined&&hi[k+'B']===SOLD.hc)return hi[k];let off=0;
+  for(let it=0;it<9;it++){const w=fingerWrap(L,hi.r,L?0:q.tilt,q.tight,off);if(!(w.pen<-.0005/SOLD.hscale))break;off=Math.min(off-w.pen*.85,GRIP.offMax/SOLD.hscale)}
+  hi[k]=off;hi[k+'B']=SOLD.hc;return off}
+function meleeFingers(){const id=S.weapon,wm=weaponMesh,b=SOLD.b;if(!wm||!b||W[id].ranged||wm.parent!==b.RightHand||!wm.visible)return;
+  const q=WGRIP[id]||WGRIP.club,hi=HINFO[id];if(!hi)return;for(const [o,qq] of fingerWrap(false,hi.r,q.tilt,q.tight,gripFit(false,id)))o.quaternion.copy(qq);
+  if(SOLD.lgOn){for(const [o,qq] of fingerWrap(true,hi.r,0,q.tight,gripFit(true,id)))o.quaternion.slerp(qq,SOLD.lgOn)}SOLD.lgOn=0}
 function attachMelee(g,id){
-  const c=SOLD.hc[0],q=WGRIP[id]||WGRIP.club,ct=Math.cos(q.tilt),st=Math.sin(q.tilt),sc=1/SOLD.hscale;
-  const t=c.k.clone().multiplyScalar(ct).addScaledVector(c.f,st).normalize(),u=c.f.clone().multiplyScalar(ct).addScaledVector(c.k,-st).normalize();
+  const c=SOLD.hc[0],q=WGRIP[id]||WGRIP.club,ct=Math.cos(q.tilt),st=Math.sin(q.tilt),sc=1/SOLD.hscale,hi=handleInfo(id,g);
+  const t=new THREE.Vector3(),u=new THREE.Vector3();c._useKK=true;gripBasis(c,q.tilt,t,u,new THREE.Vector3());c._useKK=false;
   u.applyAxisAngle(t,q.roll);const yw=t.clone().negate(),xw=new THREE.Vector3().crossVectors(yw,u);
   g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xw,yw,u));g.scale.setScalar(sc);
-  g.position.copy(c.palm).sub(new THREE.Vector3(0,q.g,0).applyQuaternion(g.quaternion).multiplyScalar(sc));
+  g.position.copy(palmFor(c,hi.r,gripFit(false,id))).sub(new THREE.Vector3(hi.cx,q.g,hi.cz).applyQuaternion(g.quaternion).multiplyScalar(sc));   /* handle centre (not the model axis) on the palm, offset by the handle's radius */
   SOLD.b.RightHand.add(g);
 }
 /* pose = [grip x,y,z, tip dir x,y,z, torso twist, torso lean]; +x is the soldier's left, +z forward */
-const MREADY={one:[-.27,1.0,.2,-.12,.5,.86,0,0],two:[-.17,.98,.24,.5,.72,.3,0,0],torch:[-.24,1.12,.3,-.08,.86,.5,0,0],spear:[-.2,1.02,-.02,.12,.15,.98,0,0]};
+const MREADY={one:[-.27,1.0,.2,-.12,.5,.86,0,0],two:[-.17,.98,.24,.5,.72,.3,0,0],torch:[-.24,1.12,.3,-.08,.86,.5,0,0],spear:[-.1,1.08,.04,.16,.12,.98,0,0]};
 const MKEY={
   h:[[-.42,1.42,-.05,-.6,.5,-.6,-.6,0],[-.1,1.22,.52,.45,0,.9,.2,.22],[.32,1.04,.26,.7,-.3,-.6,.62,.28]],
   b:[[.4,1.4,-.02,.6,.5,-.6,.5,0],[.06,1.22,.52,-.45,0,.9,-.2,.22],[-.34,1.02,.24,-.7,-.3,-.6,-.55,.28]],
@@ -2496,7 +2542,8 @@ function swingPose(type,ready,u,hf,out){
   return mixPose(K[2],ready,ease((u-f1)/(1-f1)),out);
 }
 const _wh=new THREE.Vector3(),_wd=new THREE.Vector3(),_we=new THREE.Vector3(),_wx=new THREE.Vector3(),_wy=new THREE.Vector3();
-function meleePose(dt,b,g){
+function meleePose(dt,b,g){SOLD.hc[0]._useKK=SOLD.hc[1]._useKK=true;try{meleePose2(dt,b,g)}finally{SOLD.hc[0]._useKK=SOLD.hc[1]._useKK=false}}
+function meleePose2(dt,b,g){
   const id=S.weapon,cls=id==='torch'?'torch':id==='spear'?'spear':TWOH[id]?'two':'one',ready=MREADY[cls];
   let tgt=ready,type=null,u=0,hf=.42;
   if(SW.on){SW.t+=dt;if(SW.t>=SW.dur)SW.on=false;else{type=SW.type;u=SW.t/SW.dur;hf=SW.hf}}
@@ -2517,11 +2564,11 @@ function meleePose(dt,b,g){
   if(TWOH[id]){weaponMesh.updateWorldMatrix(true,false);
     _vc.set(0,-1,0).transformDirection(weaponMesh.matrixWorld);player.sg.getWorldQuaternion(_qa);_vc.applyQuaternion(_qa.invert());   // shaft direction (sg)
     _g2.set(0,gr.g,0);weaponMesh.localToWorld(_g2);player.sg.worldToLocal(_g2);                                                        // right fist on the shaft
-    b.LeftArm.getWorldPosition(_t1);player.sg.worldToLocal(_t1);const reach=SOLD.lreach||(SOLD.lreach=.53);
-    const span=gr.g-gr.g2,tc=clamp(_t1.clone().sub(_g2).dot(_vc),.14,span);                                                        // closest point to the shoulder
-    let best=tc;const far=_g2.clone().addScaledVector(_vc,span).distanceTo(_t1);if(far<=reach)best=Math.max(tc,Math.min(span,span));else{for(let t=span;t>=.14;t-=.02){if(_g2.clone().addScaledVector(_vc,t).distanceTo(_t1)<=reach){best=t;break}}}
+    b.LeftArm.getWorldPosition(_t1);player.sg.worldToLocal(_t1);const reach=SOLD.lreach||(SOLD.lreach=(()=>{const p=o=>o.getWorldPosition(new THREE.Vector3());return (p(b.LeftArm).distanceTo(p(b.LeftForeArm))+p(b.LeftForeArm).distanceTo(p(b.LeftHand)))*.92+.04})());   /* this skin's real arm reach, so the off hand always lands on the shaft */
+    const span=gr.g-gr.g2,tc=clamp(_t1.clone().sub(_g2).dot(_vc),GRIP.minSpan,span);                                                        // closest point to the shoulder
+    let best=tc;const far=_g2.clone().addScaledVector(_vc,span).distanceTo(_t1);if(far<=reach)best=Math.max(tc,Math.min(span,span));else{for(let t=span;t>=GRIP.minSpan;t-=.02){if(_g2.clone().addScaledVector(_vc,t).distanceTo(_t1)<=reach){best=t;break}}}
     SOLD.lg=SOLD.lg===undefined?best:lerp(SOLD.lg,best,1-Math.exp(-18*dt));_g2.addScaledVector(_vc,SOLD.lg);
-    gripHand(true,_g2,_vc,_p2.set(.9,.5,-.4),1,0)}
+    {const c=SOLD.hc[1],p0=c.palm,hi=HINFO[id]||{r:.02};c.palm=palmFor(c,hi.r,gripFit(true,id));gripHand(true,_g2,_vc,_p2.set(.9,.5,-.4),1,0);c.palm=p0;SOLD.lgOn=1}}
 }
 function soldierPose(dt,o){
   const A=SOLD.A,b=SOLD.b,k=a=>1-Math.exp(-a*dt);
@@ -2725,9 +2772,9 @@ function soldierPose(dt,o){
     for(const n of ['LeftForeArm','LeftHand','RightForeArm','RightHand']){const bn=b[n];if(!bn)continue;if(!bn.userData.p0)bn.userData.p0=bn.position.clone();bn.position.copy(bn.userData.p0).multiplyScalar(1+SOLD.extW)}}
   if(SOLD.PS||SOLD.RF){const wv=W[S.weapon];if(wv&&wv.pist)pistolAttach(pistolClip());else if(wv&&wv.ranged){if(rifleClip())rifleAttach();else if(weaponMesh&&weaponMesh.parent===SOLD.b.RightHand){const hb=SOLD.b.RightHand;hb.remove(weaponMesh);weaponMesh.scale.set(1,1,1);player.sg.add(weaponMesh)}}}
   if(weaponMesh){const gk=P.gather&&P.gather.kind,wr=!!W[S.weapon].ranged;
-    const hid=!(BG.st==='closed'||BG.st==='closing'&&BG.t>.55)||P.act||P.roll||S.grab||P.dead||!!P.search||gk==='pick'||gk==='search'||gk==='eat'||!!(P.craft&&P.craft.kneel)||P.dead>0||(P.getup||0)>0||wr&&(gk==='chop'||gk==='mine');
+    const hid=!(BG.st==='closed'||BG.st==='closing'&&BG.t>.55)||(P.act&&(wr||P.act.type!=='vault'))||(P.roll&&wr)||S.grab||P.dead||!!P.search||gk==='pick'||gk==='search'||gk==='eat'||!!(P.craft&&P.craft.kneel)||P.dead>0||(P.getup||0)>0||wr&&(gk==='chop'||gk==='mine');
     weaponMesh.visible=!hid&&!(P.swapT>.17);
-    if(!hid&&!wr&&weaponMesh.parent===b.RightHand)meleePose(dt,b,g);
+    if(!hid&&!wr&&weaponMesh.parent===b.RightHand&&!P.act&&!P.roll)meleePose(dt,b,g);
     if(!hid&&wr&&weaponMesh.parent===player.sg){const aimOn=(P.ads||P.aimT>0||o.aimHold||(!P.onGround&&!P.act))&&!(P.rl>0),k2=k((P.ads||P.aimT>0||o.aimHold)?11:4.5),wv=W[S.weapon],rlp=P.rl>0?clamp(1-P.rl/P.rlMax,0,1):0,rlk=P.rl>0?Math.sin(Math.PI*rlp):0,dre=Math.pow(clamp((P.drawT||0)/.42,0,1),2);
       SOLD.rA=lerp(SOLD.rA||0,aimOn?1:0,k2);SOLD.rP=lerp(SOLD.rP||0,aimOn?xhPitch():0,k2);
       const a=SOLD.rA,rc=Math.max(0,P.atk-(W[S.weapon].cd-.12))/.12,mv2=P.speed>0&&P.onGround?1:0,t9=performance.now()/1000;
@@ -4729,7 +4776,7 @@ function update(dt){
   if(!P.dead)player.g.rotation.x=P.down>0?-Math.min(1,P.down*2)*.9:lean;
   player.headG.rotation.x=P.ads?-P.aimPitch*.6:-lean*.6;player.head.rotation.x=player.headG.rotation.x;
   updateBag(dt);
-  if(SOLD.ready){const st=P.swingT/.36,mel=!w.ranged&&!!P.gather&&(P.gather.kind==='chop'||P.gather.kind==='mine');soldierPose(dt,{gesture:!(P.craft&&P.craft.kneel)&&!(P.dead>0)&&!(P.getup>0)&&!(P.heal&&EAT_ORDER.includes(P.heal.k))&&!!((P.act&&!clipAct(P.act))||P.block||S.grab||P.gather&&(w.ranged||P.gather.kind==='pick'||P.gather.kind==='search')||(w.ranged&&!(pistolClip()&&w.pist)&&!(rifleClip()&&!w.pist))||BG.st!=='closed'),cr,twist:mel?0:twist,lean:mel?0:lean,aimHold:w.ranged&&(atkHeld||padIn.atk)});pistolAimFix();rifleHands();gunFingers()}
+  if(SOLD.ready){const st=P.swingT/.36,mel=!w.ranged&&!!P.gather&&(P.gather.kind==='chop'||P.gather.kind==='mine');soldierPose(dt,{gesture:!(P.craft&&P.craft.kneel)&&!(P.dead>0)&&!(P.getup>0)&&!(P.heal&&EAT_ORDER.includes(P.heal.k))&&!!((P.act&&!clipAct(P.act))||P.block||S.grab||P.gather&&(w.ranged||P.gather.kind==='pick'||P.gather.kind==='search')||(w.ranged&&!(pistolClip()&&w.pist)&&!(rifleClip()&&!w.pist))||BG.st!=='closed'),cr,twist:mel?0:twist,lean:mel?0:lean,aimHold:w.ranged&&(atkHeld||padIn.atk)});pistolAimFix();rifleHands();gunFingers();meleeFingers()}
   if(tracerT>0){tracerT-=dt;if(tracerT<=0)tracer.visible=false}
   if(hitmT>0){hitmT-=dt;if(hitmT<=0)$('hitm').classList.remove('on')}
 

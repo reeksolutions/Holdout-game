@@ -68,6 +68,15 @@ The menu has a **MAP** switch: Test Area (movement/combat lab) or Forest.
 
 **State objects:** `P` (player physics/actions), `S` (saved state: hp, inventory, weapon, crouch), `SOLD` (rig, mixer, layers, bones `SOLD.b`), `SET` (settings).
 
+## Melee grips (B140) — adding a new melee weapon
+Add one line to `WGRIP` with `g` = where the fist sits on the handle (model y; the handle runs along the model's y axis). That's all.
+Optional keys: `g2` (farthest point for the second hand -> makes it two-handed automatically), `tilt` (handle angle across the palm), `roll` (blade turn),
+`r` (handle radius in m; otherwise measured from the model by `handleInfo`), `tight` (0–1 extra squeeze for thin grips).
+How it works: `handleInfo` measures the handle; `palmFor` puts the handle centre on the palm surface; `fingerWrap` curls each finger joint (and the thumb)
+until it touches the handle, using the current skin's own bones (so every skin's hand size fits); `gripFit` pushes the handle out if any finger would poke through;
+`meleeFingers` holds that pose every frame (idle, walk, run, swing, roll, vault). One-handed weapons leave the off hand to the animation.
+The test suite checks every `WGRIP` weapon's finger fit on the Ranger.
+
 ## Adding Mixamo animations
 reek downloads from Mixamo: **FBX Binary, Without Skin, 30 fps**. Retarget with `tools/retarget/rt.py` (headless Chromium + patched FBXLoader; it maps Mixamo bones to our UE-style names and writes into `mx_anims.json`). Paths inside the scripts point at the original dev box (`/root/work/...`) — adjust them. After retargeting, strip root travel from walk/run clips (subtract the linear pelvis drift), then wire the clip into a layer (copy how `MXR_DEF` / `mxRifleSetup` does it), time-stretch with `spd/divisor`, and test.
 

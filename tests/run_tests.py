@@ -94,6 +94,13 @@ with sync_playwright() as pw:
         e("window.__ax(0,0)");time.sleep(.6)
         ok(f'{g} strafes left facing the camera (<10 deg)',fc<10 and max(json.loads(lay))>.5,f'face off {fc:.1f}, strafe weight {lay}')
         ok(f'{g} fingers locked while moving (<3 deg/frame)',fj<3,round(fj,2))
+    # melee grips: fingers wrap every handle (no gap, nothing poking through); two-handers get both hands on the shaft
+    GM="(()=>{const id=S.weapon,wm=weaponMesh,hi=HINFO[id],q=WGRIP[id];if(!hi)return null;wm.updateMatrixWorld(true);const A=new THREE.Vector3(hi.cx,q.g,hi.cz).applyMatrix4(wm.matrixWorld),D=new THREE.Vector3(0,1,0).transformDirection(wm.matrixWorld);const dist=p=>{const d=p.clone().sub(A);d.addScaledVector(D,-d.dot(D));return d.length()};const b=SOLD.b,wp=o=>o.getWorldPosition(new THREE.Vector3());const g=sd=>{let mn=1e9,mx=-1e9;for(const fn of ['Index','Middle','Ring','Pinky']){const j2=wp(b[sd+'Hand'+fn+'2']),j3=wp(b[sd+'Hand'+fn+'3']),tip=j3.clone().add(j3.clone().sub(j2).multiplyScalar(.8));const v=(Math.min(dist(j2),dist(j3),dist(tip))-hi.r-.0085)*1000;mn=Math.min(mn,v);mx=Math.max(mx,v)}return [mn,mx]};return JSON.stringify({R:g('Right'),L:TWOH[id]?g('Left'):null,par:wm.parent===SOLD.b.RightHand})})()"
+    tp(-22,26.8,math.pi/2)
+    for wid in [k for k in json.loads(x("JSON.stringify(Object.keys(WGRIP))"))]:
+        x(f"(equip('{wid}'),0)");time.sleep(.8);m=json.loads(x(GM) or '{}')
+        okk=m and m['par'] and m['R'][0]>-6 and m['R'][1]<6 and (m['L'] is None or (m['L'][0]>-6 and m['L'][1]<6))
+        ok(f'{wid} grip fits the handle (Ranger, within 6 mm)',bool(okk),m)
     # head follows the camera (melee): turn the camera, the head (then the body) should end up facing where you look
     x("(equip('axe'),0)");time.sleep(1)
     HY="(()=>{const yaw=o=>{const v=new THREE.Vector3(0,0,1).applyQuaternion(o.getWorldQuaternion(new THREE.Quaternion()));return Math.atan2(v.x,v.z)*57.3};const d=yaw(SOLD.b.Head)-Math.atan2(AIMCAM.d.x,AIMCAM.d.z)*57.3;return Math.abs((d+540)%360-180)})()"
